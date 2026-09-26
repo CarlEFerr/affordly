@@ -28,6 +28,7 @@
 ## Task 1 — Development Foundation and Package Manager Migration
 
 **Checkpoint:** A  
+**Status:** ✅ Complete  
 **Dependencies:** None  
 **Design ref:** §3 (Technology Stack — pnpm migration)
 

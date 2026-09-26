@@ -5058,3 +5058,443 @@ After the push succeeds, report:
 Stop after the Phase 5 closure report.
 
 *End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T17:08:01Z
+
+Begin implementation with **Checkpoint A — Task 1: Development Foundation and Package Manager Migration**.
+
+Execute **Task 1 only** from the approved `tasks.md`.
+
+Do not begin Task 2.
+
+Do not create financial-analysis code.
+
+Do not create Demo Mode.
+
+Do not create UI/product components.
+
+Do not implement Plaid routes.
+
+Do not commit or push until I explicitly approve the completed checkpoint.
+
+The objective of this checkpoint is only to establish a clean, reproducible development foundation for the approved implementation plan.
+
+## Before making changes
+
+Read:
+
+- `tasks.md` — approved Phase 5 implementation plan
+- `design.md` — approved Phase 4 design
+- current `package.json`
+- current lockfile and project configuration
+- `.gitignore`
+- `.env.example`
+
+Run:
+
+- `git status`
+- `git branch --show-current`
+- `git remote -v`
+- current Node/npm/package-manager version checks
+
+Confirm the working tree is clean before proceeding.
+
+If there are unexpected pre-existing changes, stop and report them.
+
+---
+
+# 1. Migrate npm → pnpm
+
+Follow the approved migration sequence carefully.
+
+## Preserve the npm lockfile for import
+
+Do **not** delete `package-lock.json` before importing it.
+
+Ensure pnpm meets the FIAT prerequisite:
+
+`pnpm >= 11`
+
+If pnpm is not available, install or enable an appropriate pnpm 11+ version using the smallest reasonable approach for this environment.
+
+Then:
+
+1. Keep the existing `package-lock.json`.
+2. Run `pnpm import`.
+3. Confirm `pnpm-lock.yaml` is generated successfully.
+4. Run `pnpm install`.
+5. Verify dependency resolution succeeds.
+6. Remove `package-lock.json`.
+7. Ensure only `pnpm-lock.yaml` remains.
+8. Add the actual installed version to `package.json`:
+
+```json
+"packageManager": "pnpm@<actual-version>"
+```
+
+Do not leave `<actual-version>` as a placeholder.
+
+Do not maintain both npm and pnpm lockfiles.
+
+Do not change package versions unnecessarily during migration.
+
+---
+
+# 2. Install only approved dependencies
+
+Install the dependencies approved by the design/task plan.
+
+Runtime:
+
+- `plaid`
+- `react-plaid-link`
+
+Development/testing:
+
+- `vitest`
+- `@testing-library/react`
+- `@testing-library/user-event`
+- `jsdom`
+
+Use the versions selected by pnpm unless compatibility requires an explicit version.
+
+Do not install:
+
+- `@nymbus/fiat`
+- `@nymbus/fiat-tokens`
+- Recharts
+- Redux
+- Zustand
+- React Query
+- SWR
+- any unrelated packages
+
+FIAT registry access remains pending and must not block this checkpoint.
+
+If any approved dependency has a peer-dependency incompatibility with the existing Next.js 16 / React 19 environment, do not force-install blindly.
+
+Stop and report the incompatibility and the exact package/version information.
+
+---
+
+# 3. Configure Vitest
+
+Create the minimum testing configuration required by the approved plan.
+
+Prefer a simple, conventional setup.
+
+The project needs to support:
+
+- pure TypeScript/unit tests for `src/lib/**`
+- React Testing Library tests in a DOM environment
+
+Use `jsdom` as the test DOM implementation unless the installed tooling presents a concrete incompatibility.
+
+Add scripts to `package.json` as appropriate:
+
+```json
+"test": "vitest run",
+"test:watch": "vitest",
+"type-check": "tsc --noEmit"
+```
+
+Add `test:coverage` only if it works without requiring an additional unapproved package.
+
+Do not install a coverage provider merely to satisfy a script that is not yet needed.
+
+Keep the normal:
+
+`pnpm test`
+
+command strict.
+
+Do **not** permanently configure Vitest with:
+
+`passWithNoTests: true`
+
+For this foundation checkpoint only, use the temporary command-line option when verifying an intentionally empty test suite.
+
+---
+
+# 4. Preserve the existing application
+
+Do not build product functionality during this checkpoint.
+
+The existing placeholder Affordly page should remain functionally unchanged.
+
+Permitted changes are limited to development-foundation files such as:
+
+- `package.json`
+- `pnpm-lock.yaml`
+- removal of `package-lock.json`
+- Vitest configuration
+- test setup/configuration files if genuinely required
+
+Do not create the planned `src/lib/analysis/` implementation yet.
+
+Do not create Affordly UI components yet.
+
+Do not change product copy or layout.
+
+---
+
+# 5. Environment and secret safety
+
+Verify:
+
+- `.env.local` remains ignored
+- `.env.example` contains placeholders only
+- no Plaid credentials are added to committed configuration
+- no Nexus/FIAT credentials are introduced
+- no secrets appear in lockfile changes or generated configuration
+
+Do not print secret values in the completion report.
+
+You may report whether required environment variable names are present, but never their values.
+
+---
+
+# 6. Run Checkpoint A acceptance checks
+
+Run all relevant foundation checks.
+
+## Package-manager verification
+
+Verify:
+
+- `pnpm --version`
+- `pnpm install`
+- `pnpm-lock.yaml` exists
+- `package-lock.json` no longer exists
+- `package.json` contains the correct `packageManager` field
+
+## Project quality checks
+
+Run:
+
+```bash
+pnpm type-check
+pnpm lint
+pnpm build
+```
+
+For the intentionally empty test suite at this checkpoint only, run the approved temporary no-test verification, for example:
+
+```bash
+pnpm test -- --passWithNoTests
+```
+
+If the project's script forwarding syntax requires a slightly different equivalent command, use the correct pnpm/Vitest syntax and report what was used.
+
+Do not weaken the normal `pnpm test` configuration.
+
+---
+
+# 7. Inspect the resulting diff
+
+After all checks pass:
+
+Run:
+
+- `git status`
+- `git diff --stat`
+- `git diff`
+
+Review the changes for accidental:
+- application code changes,
+- secret exposure,
+- unrelated formatting,
+- dependency additions beyond the approved list,
+- duplicate lockfiles,
+- generated artifacts.
+
+Do not stage anything yet unless staging is needed solely for inspection.
+
+Do not commit.
+
+Do not push.
+
+---
+
+# Stop condition — Checkpoint A human gate
+
+After Task 1 is complete, stop.
+
+Do not proceed to Task 2 / Checkpoint B.
+
+Report:
+
+1. Node version
+2. pnpm version
+3. npm → pnpm migration result
+4. Final lockfile state
+5. `packageManager` value
+6. Runtime dependencies installed
+7. Development dependencies installed
+8. Vitest configuration created
+9. Exact scripts added or changed in `package.json`
+10. Results of:
+   - `pnpm install`
+   - `pnpm type-check`
+   - `pnpm lint`
+   - `pnpm build`
+   - temporary zero-test Vitest check
+11. Any warnings or compatibility issues encountered
+12. Files changed
+13. Confirmation that:
+   - no Affordly product functionality was implemented,
+   - no Task 2 work began,
+   - no FIAT package was installed,
+   - no Recharts package was installed,
+   - no secrets were exposed,
+   - nothing was committed,
+   - nothing was pushed.
+14. Final `git status`
+
+Wait for explicit human approval before committing Checkpoint A or beginning Checkpoint B.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T17:16:30Z
+
+Checkpoint A — Task 1 has passed human review and is approved.
+
+Do not begin Task 2 yet.
+
+The development foundation is accepted with:
+
+- Node v26.0.0
+- pnpm v12.6.0
+- npm → pnpm migration complete
+- `pnpm-lock.yaml` as the only dependency lockfile
+- `"packageManager": "pnpm@12.6.0"`
+- approved Plaid dependencies installed
+- approved Vitest / React Testing Library dependencies installed
+- Vitest configured
+- type checking configured
+- all foundation acceptance checks passing
+- no Affordly product implementation started
+
+The pnpm 12 `allowBuilds.unrs-resolver: true` configuration is approved as a narrowly scoped dependency-build permission.
+
+Do not broaden build-script permissions to other packages unless a future installation specifically requires review.
+
+## Final pre-commit verification
+
+Before committing:
+
+1. Run `git status`.
+2. Inspect the complete diff.
+3. Verify the only intended foundation changes are:
+   - `package.json`
+   - deletion of `package-lock.json`
+   - new `pnpm-lock.yaml`
+   - new `pnpm-workspace.yaml`
+   - new `vitest.config.mts`
+   - updated `docs/ai-collaboration/prompts.md`
+
+4. Confirm `pnpm-workspace.yaml` grants build permission only where intentionally required for the current dependency graph.
+
+5. Confirm no:
+   - application/product code,
+   - `.env.local`,
+   - Plaid credentials,
+   - Nexus credentials,
+   - FIAT packages,
+   - Recharts,
+   - unrelated generated files
+
+are included.
+
+## Re-run checkpoint checks
+
+Run:
+
+```bash
+pnpm install
+pnpm type-check
+pnpm lint
+pnpm build
+pnpm exec vitest run --passWithNoTests
+```
+
+Confirm all pass.
+
+Do not permanently enable `passWithNoTests`.
+
+---
+
+## Update task progress
+
+Update `tasks.md` only as necessary to mark **Task 1 / Checkpoint A** complete.
+
+Do not mark Task 2 or any later task as started or completed.
+
+Preserve the approved implementation plan and human-gate structure.
+
+If marking task completion changes `tasks.md`, include that intentional change in the Checkpoint A commit.
+
+---
+
+## Collaboration history
+
+Verify the Checkpoint A implementation prompt and this approval/closure prompt are captured in:
+
+`docs/ai-collaboration/prompts.md`
+
+Do not rewrite previous prompt history.
+
+---
+
+## Commit
+
+Stage only the approved Checkpoint A changes.
+
+Create the commit:
+
+`chore: establish pnpm and test foundation`
+
+Push it to:
+
+`main`
+
+on the configured Affordly GitHub remote.
+
+Do not begin Task 2 after pushing.
+
+---
+
+## Completion report
+
+After the push succeeds, report:
+
+1. Commit hash
+2. Files included
+3. Node version
+4. pnpm version
+5. Final package-manager / lockfile state
+6. Installed runtime dependencies and versions
+7. Installed development dependencies and versions
+8. Final quality-check results
+9. Confirmation that Task 1 is marked complete if `tasks.md` tracks execution status
+10. Confirmation that Checkpoint A prompts were committed
+11. Remote and branch pushed
+12. Final `git status`
+13. Confirmation that:
+   - Task 2 has not begun,
+   - no Affordly product functionality exists yet,
+   - no FIAT packages were installed,
+   - no Recharts package was installed,
+   - no secrets were committed.
+
+Stop after the Checkpoint A closure report.
+
+*End of entry*
