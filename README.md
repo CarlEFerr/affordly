@@ -2,7 +2,7 @@
 
 A retrospective financial backtest tool that answers a specific question: **how would a proposed monthly payment have fit into the months you just lived through?**
 
-> **Live demo:** deployment URL will be added here after Vercel deployment (Task 10.4).
+> **Live demo:** https://affordly-six.vercel.app
 
 ---
 

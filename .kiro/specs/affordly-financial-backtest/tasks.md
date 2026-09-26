@@ -657,6 +657,7 @@ visual tokens remain in place; do not elaborate them.
 ## Task 10 — Documentation, Deployment, and Assessment Readiness
 
 **Checkpoint:** E (completes)  
+**Status:** ✅ Complete  
 **Dependencies:** Tasks 8, 9  
 **Design ref:** §10 (File Structure), §16 (Security), product-direction.md Assumptions
 
@@ -697,13 +698,13 @@ repository is clean for submission.
   - Stop for human review before committing (checkpoint human-gate behavior applies).
   - Commit stable application and documentation to `main`.
 
-- [ ] **10.4 Deploy to Vercel**
+- [ ] **10.4 Deploy to Vercel** ✅
   - Confirm `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV=sandbox` are set in Vercel
     environment variables (project settings, not committed to repo).
   - Push to `main` (or allow the previous commit to trigger Vercel auto-deployment).
   - Verify Vercel deployment succeeds.
 
-- [ ] **10.5 Smoke-test the deployed app**
+- [ ] **10.5 Smoke-test the deployed app** ✅
   - Mobile: open on phone or in DevTools 375px emulation.
     - Demo Mode loads immediately with backtest results visible.
     - Payment input updates results.
@@ -712,7 +713,7 @@ repository is clean for submission.
   - Desktop: verify same functionality, wider layout.
   - Confirm no console errors in production build.
 
-- [ ] **10.6 Finalize README and make submission commit**
+- [x] **10.6 Finalize README and make submission commit**
   - Add deployed live URL to README (now that it is known).
   - Final commit for submission.
   - Push to `main`.
@@ -720,13 +721,13 @@ repository is clean for submission.
 
 ### Acceptance Criteria
 
-- [ ] README covers all assessment-required content listed above.
-- [ ] Live URL serves a functional Demo Mode immediately on load.
-- [ ] Plaid Sandbox path works on the deployed URL.
-- [ ] All quality checks pass (`type-check`, `lint`, `test`, `build`).
-- [ ] Repository contains no secrets, no npm lockfile, no FIAT placeholder APIs.
-- [ ] `git status` is clean and `main` is synchronized with `origin/main` after final push.
-- [ ] `git log --oneline` shows clean, meaningful commit history reflecting the spec-driven workflow.
+- [x] README covers all assessment-required content listed above.
+- [x] Live URL serves a functional Demo Mode immediately on load.
+- [x] Plaid Sandbox path works on the deployed URL.
+- [x] All quality checks pass (`type-check`, `lint`, `test`, `build`).
+- [x] Repository contains no secrets, no npm lockfile, no FIAT placeholder APIs.
+- [x] `git status` is clean and `main` is synchronized with `origin/main` after final push.
+- [x] `git log --oneline` shows clean, meaningful commit history reflecting the spec-driven workflow.
 
 ---
 
