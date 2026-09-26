@@ -362,3 +362,792 @@ Do not make any additional project changes while closing the phase.
 Do not begin Phase 2.
 
 *End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T14:14:14Z
+
+I already have a dedicated SSH key for my `CarlEFerr` GitHub account at:
+
+`~/.ssh/github-carlferr`
+
+Please configure this repository to use that SSH key for GitHub, without changing or interfering with the SSH configuration or credentials.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T14:33:36Z
+
+We are beginning **Phase 2: Product Discovery and Problem Framing** for the Affordly take-home assessment.
+
+Do not begin implementation.
+
+Do not generate `requirements.md`, `design.md`, or `tasks.md` yet.
+
+This phase exists specifically to demonstrate thoughtful AI collaboration before committing to a product specification.
+
+## Assessment context
+
+This take-home is evaluating more than the final application.
+
+The repository and Kiro collaboration history should demonstrate:
+
+1. Product thinking
+2. Spec quality
+3. Technical fluency
+4. Effective AI collaboration
+5. Ambiguity navigation
+6. Code quality
+7. Scope discipline
+8. Thoughtful UX
+
+The assessment explicitly advises:
+
+- Start with the problem, not the solution.
+- Show the thinking and iteration that led to the result.
+- Treat scope as a product skill.
+- For frontend work, design and UX matter.
+- Kiro's spec-driven workflow should drive implementation.
+
+The HR clarification also says:
+
+- The expected effort is approximately 3 hours.
+- The application should reference the Nymbus Joy Design System where appropriate.
+- The repository must contain Kiro requirements, technical design, and task breakdown.
+- AI collaboration must be documented.
+- The final application must work and have a strong README.
+
+Therefore, do not optimize this phase for speed of implementation. Optimize it for making the product decision defensible before specifications are written.
+
+---
+
+# Current product concept
+
+The application is called:
+
+**Affordly**
+
+The current hypothesis is that consumers have many tools that answer questions such as:
+
+- What is my credit score?
+- How much will a lender approve me for?
+- What is my monthly budget?
+- What would a loan payment be?
+
+But those answers do not necessarily tell someone whether a **new recurring financial commitment actually fits the way their finances behave in real life**.
+
+Examples of a new commitment could include:
+
+- a car payment,
+- a personal loan,
+- a financed purchase,
+- a recurring payment plan,
+- another meaningful monthly obligation.
+
+Affordly's current concept is to let the consumer enter a hypothetical recurring payment and evaluate it against their own recent financial history.
+
+Instead of relying primarily on averages or generic affordability ratios, the application would conceptually ask:
+
+> **What would have happened if I had already been making this payment during my actual previous months?**
+
+For example:
+
+A user considers a `$475/month` car payment.
+
+Affordly could replay that hypothetical obligation against approximately six months of historical cash flow and show something like:
+
+- 4 months would have remained comfortable
+- 1 month would have fallen below the user's reserve
+- 1 month would have gone negative
+- March would have been the most financially stressed month
+
+The user could then adjust the hypothetical payment and immediately see how the historical result changes.
+
+The important distinction is that this is intended to be a **consumer-side financial backtest**, not simply another affordability calculator.
+
+A useful framing hypothesis is:
+
+> Lenders use financial information to determine whether they are comfortable extending credit to a borrower. Affordly explores whether consumers can use their own financial history to evaluate whether they are comfortable taking on the obligation.
+
+This is a hypothesis, not a conclusion. Challenge it.
+
+---
+
+# Current technical/product assumptions
+
+These are provisional decisions and should be challenged if appropriate:
+
+- The app is focused on a single financial decision rather than full budgeting.
+- Historical transaction data may eventually come from Plaid Sandbox.
+- The final demo should also have deterministic sample data so the core experience is always reviewable.
+- The initial analysis window is approximately six months.
+- The proposed commitment is primarily modeled as a recurring monthly payment.
+- The experience should explain the result rather than produce an unexplained affordability score.
+- The MVP should avoid authentication, database persistence, and continuous transaction synchronization because the core experience can operate as a single-session analysis.
+- This is a prototype, not a lending decision engine or financial-advice system.
+- We should avoid claiming absolute certainty such as “you can afford this.”
+- The user's real historical behavior should be more important than a generic income-to-expense ratio.
+
+Again: these are assumptions. I want you to challenge them rather than merely accept them.
+
+---
+
+# Your role in this phase
+
+Act as a critical product-thinking partner.
+
+Do **not** start by praising the concept or turning it into requirements.
+
+Analyze it critically.
+
+I want you to examine:
+
+### 1. The real user problem
+
+Identify the clearest underlying user problem.
+
+Distinguish the actual problem from the current proposed solution.
+
+Ask whether this problem is:
+- real,
+- frequent enough,
+- painful enough,
+- understandable without financial expertise,
+- appropriate for a small fintech product.
+
+### 2. Target user
+
+Challenge who the primary user should be.
+
+For example, is this strongest for:
+- someone considering a car loan,
+- someone with variable cash flow,
+- someone deciding whether to finance a purchase,
+- someone who has been approved for credit but does not trust the approval amount,
+- or another narrower user?
+
+We should avoid trying to serve everyone.
+
+### 3. Existing alternatives
+
+Reason about how users solve this problem today.
+
+Consider:
+- lender affordability decisions,
+- debt-to-income calculators,
+- budgeting tools,
+- spreadsheets,
+- cash-flow forecasting,
+- financial advisors,
+- “what-if” budgeting features.
+
+Identify what must be different about Affordly for it to deserve to exist.
+
+Do not claim that no competitor exists unless that has been verified separately.
+
+### 4. Product differentiation
+
+Challenge whether “historical financial backtesting” is meaningful enough to be the core differentiation.
+
+Specifically examine:
+
+- Does replaying a hypothetical payment against historical cash flow actually help a user make a better decision?
+- What can historical replay tell us that averages cannot?
+- What can it **not** tell us?
+- Could it create false confidence?
+- What should the application communicate to prevent that?
+
+### 5. Core user decision
+
+Define the specific decision Affordly should help the user make.
+
+Avoid vague goals such as “improve financial wellness.”
+
+We need one concrete job-to-be-done.
+
+### 6. Result language
+
+Examine how results should be communicated.
+
+For example, compare:
+
+- “You can afford this.”
+- “You cannot afford this.”
+- “This payment would have fit in 5 of your last 6 months.”
+- “This payment would have pushed one historical month below your reserve.”
+- “Here is the financial tradeoff.”
+
+Recommend the type of language that is useful without pretending the product knows the future.
+
+### 7. Scope
+
+The expected implementation effort is approximately three hours.
+
+Identify:
+- what is essential to demonstrate the idea,
+- what would be attractive but unnecessary,
+- what should explicitly be excluded.
+
+Be aggressive about cutting features.
+
+### 8. Risks and assumptions
+
+Identify the most important product assumptions we would need to document.
+
+Pay particular attention to:
+- reconstructed historical balances,
+- irregular income,
+- transfers between accounts,
+- savings,
+- unusual one-time expenses,
+- historical months that may not represent the future,
+- reserve/cushion assumptions,
+- how a new payment date is modeled.
+
+Do not solve all of them yet. Identify which ones matter most.
+
+---
+
+# Collaboration behavior
+
+This phase should visibly demonstrate human/AI iteration.
+
+Therefore:
+
+- Do not create a polished final product brief immediately.
+- Do not generate Kiro requirements.
+- Do not make final decisions on my behalf.
+- Do not silently resolve major ambiguities.
+- Surface weaknesses and tradeoffs.
+- Tell me when one of my current assumptions appears weak.
+- Offer alternatives when useful.
+- Separate observations from recommendations.
+
+At the end of your response, give me:
+
+1. Your strongest formulation of the **user problem**
+2. Your strongest formulation of the **target user**
+3. The biggest weakness you currently see in the concept
+4. The strongest differentiation you see in the concept
+5. The **three most important product decisions** we need to make before writing requirements
+
+Then stop.
+
+Do not create or modify application code.
+
+Do not create the Kiro feature spec yet.
+
+Do not proceed to another phase.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T14:38:10Z
+
+I reviewed your product-discovery analysis. I agree with several of your concerns, and I want to refine the concept before we create requirements.
+
+Do not create a Kiro feature spec yet.
+
+Do not create `requirements.md`, `design.md`, or `tasks.md`.
+
+Do not modify application code.
+
+This is still **Phase 2: Product Discovery and Problem Framing**.
+
+## Decisions made after reviewing your critique
+
+### 1. Primary user and use case
+
+I agree that we need a much more concrete decision point.
+
+The primary MVP use case will be:
+
+> A consumer has received or is considering a specific vehicle-financing offer with a known monthly payment and wants to understand how that obligation would have fit into the financial months they just lived through.
+
+Vehicle financing is the primary scenario for the MVP and demo because it is immediately understandable.
+
+However, Affordly should not be architecturally hardcoded exclusively for auto loans. The underlying concept is a recurring monthly financial commitment.
+
+I also want to slightly revise the target-user framing.
+
+The important characteristic is not necessarily **variable income**. It is **variable cash flow**.
+
+A salaried person may have predictable income but highly uneven monthly expenses. Therefore, the target user is someone for whom a new monthly payment is financially material and whose month-to-month financial breathing room is not perfectly predictable.
+
+The user does not have to have already received formal lender approval. They simply need to have a concrete proposed monthly payment.
+
+---
+
+### 2. Affordly will be a retrospective backtest, not a prediction
+
+I agree strongly that the product must not say:
+
+- “You can afford this.”
+- “You cannot afford this.”
+- “This is safe.”
+- “You should take this loan.”
+
+Affordly should provide evidence that helps the user make their own decision.
+
+The core question becomes:
+
+> **How would this monthly payment have fit into the six financial months I just lived through?**
+
+All important result language should remain explicitly retrospective.
+
+We should make it clear that historical performance does not predict future financial conditions.
+
+---
+
+### 3. Simplify the financial model: monthly cash flow, not reconstructed daily balances
+
+I want to deliberately remove historical daily-balance reconstruction from the MVP.
+
+We will analyze the **last six complete calendar months**.
+
+For each month, the conceptual calculation is:
+
+`historical breathing room = cash inflows - cash outflows`
+
+Then:
+
+`simulated breathing room = historical breathing room - proposed monthly payment`
+
+The hypothetical payment is applied once to every complete historical month.
+
+We will **not** model:
+- the day of the month on which the proposed payment occurs,
+- intra-month liquidity,
+- reconstructed daily historical account balances,
+- future account balances.
+
+This means the application should not say:
+
+> “Your balance would have reached $82 on March 17.”
+
+It may say:
+
+> “Your monthly cash flow would have been negative in March after adding this payment.”
+
+I believe this removes false precision, simplifies the technical model, and keeps the application focused on the differentiation we care about: month-to-month variability that averages conceal.
+
+Challenge this decision if you believe it weakens the usefulness of the product materially.
+
+---
+
+### 4. Replace a system-defined reserve with a user-defined breathing-room target
+
+I agree that an arbitrary universal reserve such as `$500` would be a product decision disguised as financial truth.
+
+Instead, the user should define how much monthly breathing room they personally want to preserve.
+
+For example:
+
+**Proposed monthly payment**
+`$475`
+
+**Monthly breathing room I want to keep**
+`$300`
+
+Affordly can then report:
+
+> A `$475` payment would have left monthly cash flow below your `$300` breathing-room target in 3 of the last 6 months.
+
+And separately:
+
+> In 1 of those months, monthly cash flow would have been negative.
+
+The breathing-room target is therefore a **user preference**, not an affordability rule created by Affordly.
+
+For deterministic demo data, the sample persona can begin with a predefined breathing-room target, but it must remain visibly adjustable.
+
+Please challenge whether “breathing room” is the clearest terminology or whether another user-facing term would be easier to understand.
+
+---
+
+### 5. Simplify the account/data model
+
+For the MVP analysis, use the user's **primary checking account cash flow**.
+
+Do not aggregate spending across checking, savings, and credit-card transaction histories.
+
+The reason is to avoid double-counting.
+
+For example, if checking shows a `$1,200` credit-card payment, that is already a real cash outflow from checking. We should not additionally count the individual credit-card purchases that produced that bill.
+
+Similarly, transfers to savings are not necessarily “expenses,” but they are part of the actual historical cash movement out of checking.
+
+Affordly's question is intentionally:
+
+> If the cash movements of that historical month remained unchanged and this additional payment had existed, what would the month's remaining cash flow have looked like?
+
+This also means the UI and copy should prefer terms such as:
+- cash in,
+- cash out,
+- monthly breathing room,
+
+rather than implying that every outflow represents consumption or an expense category.
+
+Challenge this model for any serious product-integrity problems we are overlooking.
+
+---
+
+### 6. Six complete months
+
+The MVP analysis window will be the user's **six most recent complete calendar months**.
+
+The current partial month should not participate in the backtest.
+
+The six-month window must be visible in the UI so the user understands what period was analyzed.
+
+We recognize that six months may not be representative of the future. That limitation must be communicated clearly.
+
+Longer windows, seasonal analysis, and user-selectable analysis periods are outside the MVP.
+
+---
+
+### 7. Plaid and deterministic demo data are both part of the intended MVP
+
+Affordly should support two financial-data sources:
+
+**Demo Mode**
+
+A deterministic, intentionally designed sample financial history that makes the product understandable immediately and guarantees the reviewer can experience the complete workflow.
+
+**Plaid Sandbox**
+
+A real Plaid Sandbox integration that obtains transaction history and demonstrates the external financial-data integration.
+
+Both paths must normalize into the same internal financial-history model before entering the analysis engine.
+
+The product logic must not depend directly on Plaid-specific objects.
+
+The deterministic demo is not merely an error fallback. It is a first-class way to evaluate the product quickly.
+
+Plaid Sandbox demonstrates that the same analysis can be driven from an external financial-data source.
+
+No authentication, database persistence, production Plaid access, or continuous webhook synchronization is required for this prototype.
+
+---
+
+## Current core experience hypothesis
+
+The smallest meaningful Affordly experience now appears to be:
+
+1. User starts with Demo Mode or Plaid Sandbox financial history.
+2. User enters a proposed monthly payment.
+3. User chooses the minimum monthly breathing room they personally want to preserve.
+4. Affordly applies that payment to each of the previous six complete months.
+5. The application shows the six months individually.
+6. The user can immediately see:
+   - original monthly breathing room,
+   - simulated breathing room,
+   - months below their chosen target,
+   - months that would have become cash-flow negative.
+7. User changes the proposed payment and sees the historical backtest update.
+8. Affordly makes no recommendation and gives no “affordable/not affordable” verdict.
+
+A particularly important interaction is being able to select a difficult month and understand why that month had less breathing room than the others.
+
+However, if explaining the composition of an individual month materially increases implementation scope, challenge whether that is essential to the MVP.
+
+---
+
+## What I want from you now
+
+Critically review these decisions.
+
+Do not simply accept them because I made them.
+
+Specifically determine whether:
+
+1. Moving from reconstructed balances to monthly net cash flow preserves enough value for Affordly's core idea.
+2. The user-defined breathing-room target is understandable and defensible.
+3. Primary-checking-only analysis creates any major misleading behavior we have not considered.
+4. Six complete months is sufficient for the prototype.
+5. The product is now narrow enough for an approximately three-hour implementation.
+6. Any remaining ambiguity would prevent us from writing clear and testable requirements.
+
+If you identify a serious flaw, explain it and propose the smallest correction.
+
+If the concept is now coherent enough to proceed, produce a concise **Product Direction Brief** containing:
+
+- Problem statement
+- Primary user
+- Primary job-to-be-done
+- Primary MVP scenario
+- Product thesis
+- What Affordly does
+- What Affordly explicitly does not claim
+- Core interaction
+- Success criteria for the MVP
+- Explicit MVP non-goals
+- Key assumptions/limitations that must eventually appear in the product or README
+
+Do not create implementation requirements yet.
+
+Do not modify code.
+
+Stop after the Product Direction Brief and wait for my review.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T14:43:42Z
+
+I reviewed the Product Direction Brief. Before we close Phase 2 and begin requirements, I want to resolve the remaining ambiguities and one inconsistency in your own analysis.
+
+Do not create `requirements.md`, `design.md`, or `tasks.md` yet.
+
+Do not modify application code.
+
+This is still Phase 2: Product Discovery and Problem Framing.
+
+## 1. Resolve the transfer-handling contradiction
+
+Your prior response contains two conflicting positions:
+
+- In the ambiguity section, you suggested excluding transactions Plaid categorizes as transfers from both inflows and outflows.
+- In the Product Direction Brief, you stated that transfers to savings should be treated as outflows and reduce breathing room.
+
+I want one coherent MVP rule.
+
+Use this rule unless you find a serious flaw:
+
+> **Identifiable internal account transfers are excluded from Affordly's monthly cash-flow calculation.**
+
+Examples:
+- checking → savings: exclude
+- savings → checking: exclude
+- transfers between two accounts owned by the same user: exclude when identifiable
+
+The purpose is to measure cash entering and leaving the user's financial system, not merely movement between their own accounts.
+
+For the MVP, if Plaid identifies a transaction as an internal transfer using available transaction/category metadata, exclude it.
+
+Do not attempt sophisticated transfer matching algorithms.
+
+If a transfer cannot be confidently identified, it may remain in the transaction history and this limitation should be documented.
+
+Challenge this rule if it creates a more serious integrity problem than the one it solves.
+
+---
+
+## 2. Use “monthly cushion” as the user-facing term
+
+Replace “monthly breathing room” with:
+
+**Monthly cushion**
+
+The concept means:
+
+> The amount of monthly cash flow the user personally wants to remain after all normal cash outflows and the proposed new payment.
+
+Example UI copy:
+
+**Monthly payment**
+`$475`
+
+**Monthly cushion I want to keep**
+`$300`
+
+Supporting copy can explain:
+
+> “For example, a $300 cushion means you want at least $300 remaining after that month's cash outflows.”
+
+The monthly cushion is:
+- selected by the user,
+- not an Affordly recommendation,
+- not a universal affordability threshold,
+- adjustable at any time.
+
+The analysis should require a cushion value rather than silently assuming one.
+
+For Demo Mode, the field may start with a visible sample value that the user can change.
+
+---
+
+## 3. Minimum analysis history
+
+Use:
+
+- Target analysis period: **6 most recent complete calendar months**
+- Minimum acceptable Plaid history: **3 complete calendar months**
+
+If 3–5 complete months are available:
+- run the analysis,
+- clearly show the actual number/date range analyzed,
+- do not pretend 6 months were available.
+
+If fewer than 3 complete months are available:
+- do not run the backtest,
+- explain that Affordly needs at least 3 complete months of transaction history.
+
+Demo Mode will always contain 6 complete months.
+
+---
+
+## 4. Month-detail interaction
+
+Keep month detail in the MVP, but deliberately constrain it.
+
+When the user expands/selects a month, show only:
+
+- total cash in,
+- total cash out,
+- original monthly cushion,
+- simulated monthly cushion after the proposed payment,
+- up to the 3 largest relevant cash movements for that month.
+
+Do not build:
+- transaction search,
+- transaction categorization UI,
+- charts inside month detail,
+- editable transactions,
+- anomaly detection,
+- AI explanations.
+
+The purpose of month detail is explainability: the user should be able to understand why one month was materially different from another.
+
+---
+
+## 5. Clarify the output states
+
+The month status should derive only from the user's selected cushion.
+
+Conceptually:
+
+If simulated monthly cash flow < 0:
+- **Negative**
+
+Else if simulated monthly cash flow < user's monthly cushion:
+- **Below cushion**
+
+Else:
+- **Above cushion**
+
+These are descriptive historical simulation states.
+
+They must not become:
+- good/bad,
+- safe/unsafe,
+- affordable/unaffordable,
+- recommended/not recommended.
+
+The application can summarize counts such as:
+
+> “With a $475 monthly payment, 2 of your last 6 months would have fallen below your $300 cushion. 1 of those months would have been negative.”
+
+The user should then inspect the individual months and make their own judgment.
+
+---
+
+## 6. Final scope check against the assessment
+
+Before finalizing Phase 2, reassess the product against these take-home constraints:
+
+- approximately 3 hours of implementation effort,
+- product thinking is important,
+- UX/design quality matters,
+- Nymbus Joy Design System will be used as design guidance,
+- Kiro's spec-driven workflow must drive implementation,
+- requirements must be clear and testable,
+- technical design should address data flow, API patterns, error handling, and edge cases,
+- scope discipline is explicitly being evaluated,
+- the final application must work,
+- Plaid Sandbox is the external API integration,
+- deterministic Demo Mode must guarantee that reviewers can experience the core product.
+
+Do not add functionality simply to make the application appear larger.
+
+---
+
+## 7. Produce the final Phase 2 Product Direction Brief
+
+If you agree the concept is now coherent enough to enter requirements, revise the Product Direction Brief one final time.
+
+It must contain:
+
+1. Problem statement
+2. Primary user
+3. Primary job-to-be-done
+4. Primary MVP scenario
+5. Product thesis
+6. What Affordly does
+7. What Affordly explicitly does not claim
+8. Core interaction
+9. Definitions:
+   - monthly cash flow
+   - monthly cushion
+   - complete month
+   - internal transfer
+10. Month status rules
+11. Plaid history rules
+12. Success criteria
+13. Explicit MVP non-goals
+14. Key assumptions and limitations
+
+Keep it concise enough to guide the subsequent Kiro requirements workflow.
+
+Do not generate requirements yet.
+
+At the end, explicitly state whether there are any unresolved product ambiguities that would prevent us from writing clear, testable requirements.
+
+Then stop and wait for my review.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T14:47:22Z
+
+Phase 2 has been reviewed and approved.
+
+The final Product Direction Brief is accepted as the product foundation for the Affordly requirements workflow.
+
+Do not begin requirements or another phase yet.
+
+Please close Phase 2 by:
+
+1. Re-checking the current Git diff and status.
+2. Verify that the automatic AI collaboration log contains the Phase 2 prompts generated during this product-discovery process.
+3. Verify that no secrets, `.env.local`, build artifacts, or other unintended/sensitive files are staged or included.
+4. Preserve the final Phase 2 Product Direction Brief in the repository at an appropriate location under project documentation so that the product reasoning exists alongside the chronological raw prompt history.
+5. The preserved brief must reflect the final approved version from this conversation. Do not rewrite it into a different product direction.
+6. Stage the Phase 2 documentation and collaboration-history changes.
+7. Create the commit:
+
+`docs: define Affordly product direction`
+
+8. Push the commit to the `main` branch of the configured Affordly GitHub remote.
+9. Verify the push succeeded.
+10. Report:
+   - commit hash
+   - files included
+   - location of the Product Direction Brief
+   - confirmation that the prompt collaboration history was included
+   - remote/branch pushed
+   - final `git status`
+
+Do not create `requirements.md`, `design.md`, or `tasks.md`.
+
+Do not modify application code.
+
+Do not begin Phase 3.
+
+Stop after the Phase 2 closure report.
+
+*End of entry*
