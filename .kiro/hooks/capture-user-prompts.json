@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Capture User Prompts to Collaboration Log",
+      "trigger": "UserPromptSubmit",
+      "description": "Appends every user prompt verbatim to docs/ai-collaboration/prompts.md with a UTC timestamp, building a chronological AI collaboration record for the Affordly assessment.",
+      "action": {
+        "type": "command",
+        "command": "python3 -c \"import sys,json,datetime,os; raw=sys.stdin.read(); d=json.loads(raw) if raw.strip() else {}; p=d.get('userPrompt') or d.get('prompt') or d.get('USER_PROMPT') or os.environ.get('USER_PROMPT','(prompt field not found in hook payload)'); ts=datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'); path=os.path.join(os.getcwd(),'docs/ai-collaboration/prompts.md'); open(path,'a').write('\\n---\\n\\n## Auto-captured Prompt\\n\\n**Timestamp:** ' + ts + '\\n\\n' + p + '\\n\\n*End of entry*\\n')\""
+      }
+    }
+  ]
+}
