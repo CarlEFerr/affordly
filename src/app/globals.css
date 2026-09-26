@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Exclude documentation and spec directories from Tailwind class scanning.
+   These files contain example class strings in prose that should not generate utilities. */
+@source not "../docs/**";
+@source not "../.kiro/**";
 
+/* ─── Provisional semantic tokens ────────────────────────────────────────────
+   All values below are PROVISIONAL placeholders pending Nymbus FIAT access.
+   When @nymbus/fiat-tokens/tokens.css becomes available, replace this @theme
+   block with the official FIAT token import. Do NOT hard-code these color values
+   in component files — always reference these CSS variables.
+   ──────────────────────────────────────────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Fonts (from create-next-app Geist setup) */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Page & surface — PROVISIONAL */
+  --color-page-bg:         #f8fafc;
+  --color-surface:         #ffffff;
+  --color-surface-subtle:  #f1f5f9;
+
+  /* Typography — PROVISIONAL */
+  --color-text-primary:    #0f172a;
+  --color-text-secondary:  #475569;
+  --color-text-tertiary:   #94a3b8;
+
+  /* Borders & dividers — PROVISIONAL */
+  --color-border:          #e2e8f0;
+  --color-border-focus:    #3b82f6;
+
+  /* Interactive — PROVISIONAL */
+  --color-focus-ring:      #3b82f6;
+  --color-btn-primary-bg:  #0f172a;
+  --color-btn-primary-text:#ffffff;
+
+  /* Informational disclosure — PROVISIONAL (not warning, not error) */
+  --color-info-surface:    #eff6ff;
+  --color-info-text:       #1e40af;
+  --color-info-border:     #bfdbfe;
+
+  /* ── Status descriptors — PROVISIONAL, awaiting FIAT guidance ─────────────
+     These are DESCRIPTIVE — they communicate a simulation state, not a verdict.
+     Colors support label text as a secondary (non-sole) differentiator.
+     Replace all with verified FIAT semantic tokens when access is granted.
+     ─────────────────────────────────────────────────────────────────────── */
+
+  /* Negative: simulated cash flow < $0 */
+  --color-status-negative-surface:  #fef2f2;
+  --color-status-negative-text:     #991b1b;
+  --color-status-negative-border:   #fecaca;
+
+  /* Below Cushion: simulated >= $0 but < user's cushion target */
+  --color-status-below-cushion-surface: #fffbeb;
+  --color-status-below-cushion-text:    #92400e;
+  --color-status-below-cushion-border:  #fde68a;
+
+  /* Above Cushion: simulated >= user's cushion target */
+  --color-status-above-cushion-surface: #eff6ff;
+  --color-status-above-cushion-text:    #1e3a8a;
+  --color-status-above-cushion-border:  #bfdbfe;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Base styles ─────────────────────────────────────────────────────────── */
+html {
+  background-color: var(--color-page-bg);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
+}
+
+/* ─── Focus ring (keyboard accessibility baseline) ───────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }

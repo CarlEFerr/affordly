@@ -6270,3 +6270,984 @@ After the push succeeds, report:
 Stop after the Checkpoint B closure report.
 
 *End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T17:38:25Z
+
+Begin **Checkpoint C — Demo Product**.  
+  
+Execute only:  
+  
+- **Task 3 — Deterministic Demo Mode Dataset and Adapter**  
+- **Task 4 — Mobile-Primary Application Shell and Provisional UI Layer**  
+- **Task 5 — Core Affordly Interaction Experience (Demo Mode)**  
+  
+Do not begin Task 6 or any Plaid implementation.  
+  
+Do not create Plaid API routes.  
+  
+Do not wire `react-plaid-link`.  
+  
+Do not connect to Plaid Sandbox.  
+  
+Do not install FIAT packages.  
+  
+Do not commit or push until I explicitly approve Checkpoint C.  
+  
+The goal of this checkpoint is to produce a complete, polished, reviewable **Demo Mode Affordly experience** using the already-approved financial engine.  
+  
+---  
+  
+# Before implementation  
+  
+Read:  
+  
+- approved `requirements.md`  
+- approved `design.md`  
+- approved `tasks.md`  
+- current financial-engine implementation  
+- existing placeholder page  
+- current `globals.css`  
+  
+Run:  
+  
+- `git status`  
+- `pnpm test`  
+- `pnpm type-check`  
+- `pnpm lint`  
+  
+Confirm the working tree is clean and Checkpoint B remains green before starting.  
+  
+If there are unexpected changes, stop and report them.  
+  
+---  
+  
+# 1. Build the deterministic Demo dataset  
+  
+Implement Task 3 using the approved normalized history contract.  
+  
+The Demo dataset must represent exactly six fully supported historical months:  
+  
+`M−1 through M−6`  
+  
+and the Demo adapter must set:  
+  
+`firstSupportedMonth = M−6`  
+  
+The dataset must use relative calendar dates derived from the supplied/current date rather than hard-coded historical months.  
+  
+Use the approved defaults:  
+  
+- proposed monthly payment: `$475`  
+- monthly cushion: `$300`  
+  
+With those defaults, the six months must produce exactly:  
+  
+- 1 Negative  
+- 2 Below Cushion  
+- 3 Above Cushion  
+  
+Preserve the approved expected simulated outcomes.  
+  
+Include intentionally informative factual movements such as:  
+  
+- one unusually large outflow in a tighter month,  
+- one unusually large inflow in a stronger month.  
+  
+These should make the month detail useful without the application interpreting the transactions for the user.  
+  
+Do not add categories, explanations, recommendations, or anomaly detection.  
+  
+Only posted-equivalent transactions should exist in Demo data.  
+  
+---  
+  
+# 2. Implement the Demo adapter  
+  
+Implement the Demo source adapter so it returns the same normalized `FinancialHistory` consumed by the existing engine.  
+  
+The adapter must provide:  
+  
+- `source: 'demo'`  
+- account display name  
+- normalized transactions  
+- `firstSupportedMonth = M−6`  
+  
+Do not place Demo-specific behavior inside the analysis engine.  
+  
+The existing engine must remain unchanged unless implementation reveals a genuine bug.  
+  
+If a financial-engine behavior must be modified, stop and report it rather than silently changing approved Checkpoint B logic.  
+  
+---  
+  
+# 3. Verify the Demo dataset against the engine  
+  
+Add focused Demo integration tests.  
+  
+At minimum verify:  
+  
+- six months are analyzed,  
+- all six months are contiguous,  
+- current partial month is excluded,  
+- expected status distribution is:  
+  - 1 Negative  
+  - 2 Below Cushion  
+  - 3 Above Cushion  
+- the expected default payment/cushion values generate the approved outputs,  
+- top-three movements for the intentionally notable months are correct,  
+- relative dates continue working across calendar/year boundaries.  
+  
+Do not duplicate all financial-engine tests.  
+  
+Test only the Demo dataset/adapter integration behavior that is unique to Task 3.  
+  
+---  
+  
+# 4. Build the provisional FIAT-ready presentation layer  
+  
+Implement Task 4.  
+  
+FIAT registry access is still unavailable, so use the approved interim strategy.  
+  
+Create only the local UI primitives actually needed by Affordly.  
+  
+Examples from the approved design/task plan include:  
+  
+- `Button`  
+- `Badge`  
+- `StatusBadge`  
+- `CurrencyInput`  
+- `Card`  
+- `Spinner`  
+- `ThemeProviderWrapper`  
+  
+Keep them thin.  
+  
+They are an integration boundary for FIAT later, not a home-grown design system.  
+  
+## Styling rules  
+  
+Centralize provisional visual values in `globals.css`.  
+  
+Use semantic styling concepts rather than scattering literal Tailwind colors through feature components.  
+  
+Mark provisional values clearly as pending FIAT replacement.  
+  
+Do not invent:  
+  
+- FIAT token names,  
+- FIAT component props,  
+- Nymbus-specific styling rules we have not verified.  
+  
+Use accessible, restrained presentation while access remains pending.  
+  
+---  
+  
+# 5. Mobile-first product structure  
+  
+Affordly should now be designed primarily for a phone-sized viewport.  
+  
+Start at approximately:  
+  
+`375px`  
+  
+The experience should feel intentional on mobile rather than like a desktop interface collapsed vertically.  
+  
+Prioritize this reading order:  
+  
+1. Affordly identity / concise product framing  
+2. Data-mode context  
+3. Proposed monthly payment  
+4. Monthly cushion  
+5. Retrospective disclosure  
+6. Result summary  
+7. Analyzed date range  
+8. Historical month cards  
+9. Expandable month details  
+  
+Keep the hierarchy focused.  
+  
+Do not make the page feel like a finance dashboard.  
+  
+---  
+  
+# 6. Desktop adaptation  
+  
+Desktop must provide the exact same functionality.  
+  
+Use a centered, comfortable content width and increased spacing.  
+  
+The historical months remain a sequential vertical narrative.  
+  
+Do not introduce:  
+- dashboard grids,  
+- side navigation,  
+- desktop-only functionality,  
+- charts.  
+  
+The two primary inputs may sit side-by-side on wider screens if that improves readability.  
+  
+---  
+  
+# 7. Build the primary Affordly experience  
+  
+Implement the feature components approved in Task 5.  
+  
+Keep responsibilities reasonably separated, but do not over-componentize.  
+  
+The finished Demo experience should contain:  
+  
+## Product framing  
+  
+Explain the product question succinctly.  
+  
+The experience should make it apparent that Affordly asks:  
+  
+> How would this monthly payment have fit into the financial months I just lived through?  
+  
+Do not phrase the product as an affordability calculator.  
+  
+---  
+  
+## Data mode  
+  
+Clearly indicate that the current experience uses **Demo data**.  
+  
+Demo is a first-class mode, not an error/fallback state.  
+  
+Do not implement working Plaid controls yet.  
+  
+If the approved placeholder Plaid action is included during this checkpoint, it must be clearly unavailable and must not look like broken functionality.  
+  
+Prefer not to distract from the working Demo experience.  
+  
+Do not create fake connection behavior.  
+  
+---  
+  
+# 8. Payment input  
+  
+Implement the proposed monthly payment input.  
+  
+Business rule:  
+  
+`payment > 0`  
+  
+Handle:  
+  
+- valid positive integer,  
+- valid cents,  
+- empty input,  
+- zero,  
+- negative,  
+- non-numeric input,  
+- non-finite/invalid numeric input,  
+- more than two decimal places according to the approved validation behavior.  
+  
+Use:  
+  
+`inputMode="decimal"`  
+  
+and an explicit accessible label.  
+  
+---  
+  
+# 9. Monthly cushion input  
+  
+Implement the cushion input.  
+  
+Business rule:  
+  
+`cushion >= 0`  
+  
+Zero is valid.  
+  
+Clearly communicate that this is **the user's own target**, not an Affordly recommendation.  
+  
+Do not use language such as:  
+  
+- safe cushion,  
+- recommended cushion,  
+- ideal cushion.  
+  
+---  
+  
+# 10. Input-update behavior  
+  
+Implement the approved responsive interaction:  
+  
+- raw input string updates immediately,  
+- valid value commits after approximately 200ms pause,  
+- blur commits/formats immediately,  
+- invalid or incomplete input must not produce a partially calculated result,  
+- no third-party debounce package.  
+  
+Be careful with the approved requirement that displayed results correspond to complete valid values.  
+  
+Do not allow stale results to look like they reflect an invalid value currently visible in the field.  
+  
+If the cleanest implementation requires hiding results while a visible value is invalid/incomplete, follow the approved requirement behavior.  
+  
+---  
+  
+# 11. Summary  
+  
+Implement the retrospective aggregate summary.  
+  
+It should clearly reference:  
+  
+- current proposed payment,  
+- current cushion,  
+- number of analyzed months,  
+- months falling below the cushion threshold,  
+- negative months where relevant.  
+  
+Use conditional-past / retrospective language.  
+  
+Example structure:  
+  
+> With a $475 monthly payment, 3 of your last 6 months would have been below your $300 cushion, including 1 negative month.  
+  
+Ensure the counting semantics are accurate:  
+  
+“below the cushion” as an aggregate concept may include both:  
+- Below Cushion status  
+- Negative status  
+  
+if that wording is used.  
+  
+Do not accidentally report only the mutually exclusive `Below Cushion` status count while saying “below your cushion.”  
+  
+The three formal status counts remain mutually exclusive.  
+  
+---  
+  
+# 12. Month cards  
+  
+Render all six months most-recent-first.  
+  
+Each month must show:  
+  
+- month + year,  
+- original monthly cash flow,  
+- simulated monthly cash flow,  
+- descriptive status.  
+  
+Use the exact approved status labels:  
+  
+- Negative  
+- Below Cushion  
+- Above Cushion  
+  
+Status presentation must remain non-judgmental.  
+  
+Do not use:  
+- pass/fail icons,  
+- good/bad language,  
+- safe/unsafe semantics,  
+- recommendation semantics.  
+  
+Color may support distinction provisionally, but label text is the primary identifier.  
+  
+---  
+  
+# 13. Expanded month detail  
+  
+Any month must be expandable.  
+  
+Show factual information only:  
+  
+- total cash in,  
+- total cash out,  
+- original monthly cash flow,  
+- simulated monthly cash flow,  
+- up to three largest cash movements by absolute amount.  
+  
+Large inflows and outflows compete for the same three slots.  
+  
+Show the transaction description and amount.  
+  
+If fewer than three transactions exist, show only those available.  
+  
+Do not display:  
+- interpretations,  
+- inferred reasons,  
+- “this may be annual” style comments,  
+- categories,  
+- recommendations,  
+- AI explanations.  
+  
+Only one expanded card at a time is acceptable and preferred per the approved design.  
+  
+Make expand/collapse keyboard accessible.  
+  
+---  
+  
+# 14. Retrospective disclosure  
+  
+A visible product-boundary disclosure must appear directly in the main experience.  
+  
+Communicate clearly that:  
+  
+- results are based on historical data,  
+- they do not predict future financial performance,  
+- Affordly is showing a retrospective simulation.  
+  
+Do not style the disclosure as an alarming warning/error.  
+  
+---  
+  
+# 15. Copy review  
+  
+Review every visible string in the Demo experience.  
+  
+Do not state or imply:  
+  
+- “you can afford this”  
+- “you cannot afford this”  
+- “this payment is safe”  
+- “this payment is unsafe”  
+- “good month”  
+- “bad month”  
+- “we recommend”  
+- “you should take/decline the financing”  
+- historical results will repeat in the future  
+  
+The word “predict” is allowed in negative disclosure language such as:  
+  
+> “does not predict future performance.”  
+  
+The product name “Affordly” is obviously allowed even though it contains “afford.”  
+  
+---  
+  
+# 16. Accessibility baseline  
+  
+Before calling Checkpoint C complete, verify:  
+  
+- semantic headings,  
+- programmatically associated input labels,  
+- visible keyboard focus states,  
+- keyboard-operable expand/collapse,  
+- status distinctions do not rely solely on color,  
+- touch targets are reasonable on mobile,  
+- errors are associated clearly with their fields,  
+- no critical content requires horizontal scrolling at approximately 375px.  
+  
+Do not attempt an enormous accessibility audit yet; Task 9 contains the later focused polish pass.  
+  
+---  
+  
+# 17. Tests  
+  
+Add focused React Testing Library tests for the approved high-value interactions.  
+  
+At minimum:  
+  
+- Demo analysis visible on first render,  
+- six months shown,  
+- valid payment update changes results after debounce,  
+- valid cushion update changes classification,  
+- zero payment rejected,  
+- negative payment rejected,  
+- empty payment prevents simulation results,  
+- zero cushion accepted,  
+- month detail expands,  
+- month detail collapses,  
+- correct factual top transactions displayed,  
+- retrospective disclosure visible.  
+  
+Use fake timers appropriately for debounce tests if useful.  
+  
+Avoid brittle tests tied to cosmetic CSS classes.  
+  
+Test behavior and accessible output.  
+  
+---  
+  
+# 18. Browser verification  
+  
+Run the application locally and verify manually.  
+  
+Check at least:  
+  
+## Mobile  
+Approximately 375px width:  
+- no horizontal scrolling,  
+- inputs usable,  
+- summary legible,  
+- six historical months reachable,  
+- month detail expandable,  
+- disclosure readable.  
+  
+## Desktop  
+Typical desktop width:  
+- same functionality,  
+- clean centered presentation,  
+- reasonable spacing,  
+- no accidental dashboard/grid behavior.  
+  
+Use the actual rendered product, not only unit tests, to verify this checkpoint.  
+  
+---  
+  
+# 19. Quality checks  
+  
+Run:  
+  
+```bash id="kg7cmu"  
+pnpm test  
+pnpm type-check  
+pnpm lint  
+pnpm build  
+```  
+  
+All must pass.  
+  
+Do not use `--passWithNoTests`.  
+  
+---  
+  
+# 20. Inspect the complete Checkpoint C diff  
+  
+Run:  
+  
+- `git status`  
+- `git diff --stat`  
+- `git diff`  
+  
+Verify changes belong only to Tasks 3–5 plus:  
+  
+- expected task progress,  
+- collaboration-history capture,  
+- minimal correction if an implementation bug was discovered.  
+  
+Do not stage or commit yet.  
+  
+---  
+  
+# Stop condition — Checkpoint C human gate  
+  
+After Tasks 3–5 are complete, stop.  
+  
+Do not begin Task 6.  
+  
+Report:  
+  
+1. Demo dataset structure and defaults.  
+2. Verified six-month default status distribution.  
+3. Files created/modified.  
+4. UI components implemented.  
+5. Presentation primitives implemented.  
+6. Mobile layout behavior.  
+7. Desktop layout behavior.  
+8. Input/debounce behavior.  
+9. Summary wording actually used.  
+10. Retrospective disclosure wording actually used.  
+11. Month-card/detail behavior.  
+12. Number of new tests and total test count.  
+13. Results of:  
+    - `pnpm test`  
+    - `pnpm type-check`  
+    - `pnpm lint`  
+    - `pnpm build`  
+14. Manual browser verification results at:  
+    - approximately 375px  
+    - desktop width  
+15. Any accessibility issues found or remaining.  
+16. Any deviation from `design.md` or `requirements.md`.  
+17. Any issue that should be corrected before Checkpoint C is approved.  
+18. Confirmation that:  
+    - Task 6 has not begun,  
+    - no Plaid route exists,  
+    - no Plaid Link integration exists,  
+    - no FIAT package was installed,  
+    - no Recharts package was installed,  
+    - nothing was committed,  
+    - nothing was pushed.  
+19. Final `git status`.  
+  
+Wait for explicit approval before committing Checkpoint C or beginning Checkpoint D.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T18:05:20Z
+
+Checkpoint C implementation is functionally complete, but one verification item remains before approval.
+
+Do not begin Task 6.
+
+Do not commit or push.
+
+Do not modify product behavior unless this verification reveals an actual defect.
+
+## Perform real rendered-browser verification
+
+The previous report cited `curl` as the browser verification mechanism.
+
+`curl` is not sufficient for validating responsive layout or interactive behavior.
+
+Run the application locally and inspect the **actual rendered page in a browser or project preview**.
+
+Verify the following at approximately **375px viewport width**:
+
+- no horizontal page scrolling,
+- no clipped text or controls,
+- both currency inputs are usable,
+- labels and validation messages remain readable,
+- summary copy wraps cleanly,
+- all six month cards are reachable,
+- month-card expand/collapse works interactively,
+- only one month is expanded at a time,
+- expanded transaction details remain within the viewport,
+- buttons/card headers have reasonable mobile touch targets,
+- keyboard focus is visible,
+- disclosure text is readable,
+- status labels remain distinguishable without relying on color.
+
+Then verify at a typical **desktop width**:
+
+- content remains centered,
+- payment and cushion inputs adapt as designed,
+- month cards remain a vertical sequential narrative,
+- spacing and hierarchy feel intentional,
+- no accidental grid/dashboard layout appears,
+- expand/collapse still behaves correctly,
+- no horizontal overflow or clipped content.
+
+Also interactively verify:
+
+- changing the payment updates the analysis after the debounce,
+- changing the cushion recalculates statuses,
+- zero payment shows validation and hides invalid results,
+- zero cushion is accepted,
+- expanding a month displays the expected factual transaction details.
+
+## If a visual or interaction defect is found
+
+Fix only the defect required to satisfy the approved requirements/design.
+
+Then rerun:
+
+`pnpm test`
+`pnpm type-check`
+`pnpm lint`
+`pnpm build`
+
+Report the fix explicitly.
+
+Do not expand product scope.
+
+## If the environment cannot provide actual browser/preview inspection
+
+Do not claim the responsive/browser check passed.
+
+Report exactly what visual inspection capability is unavailable and stop.
+
+## Final verification report
+
+Report:
+
+1. Browser/preview method used.
+2. Mobile viewport inspected.
+3. Mobile visual/interaction findings.
+4. Desktop viewport inspected.
+5. Desktop visual/interaction findings.
+6. Input/debounce interaction verification.
+7. Month expand/collapse verification.
+8. Any defect discovered and fixed.
+9. Final quality-check results if code changed.
+10. Confirmation that:
+   - Task 6 has not begun,
+   - no Plaid code was added,
+   - nothing was committed,
+   - nothing was pushed.
+
+Stop after this report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T18:33:54Z
+
+Before Checkpoint C approval, fix one styling issue found while inspecting the saved rendered snapshot.
+
+Do not add new product functionality.
+
+Do not begin Task 6.
+
+Do not commit or push.
+
+## Problem
+
+The current Tailwind v4 classes reference CSS variables using syntax such as:
+
+- `bg-[--color-surface]`
+- `text-[--color-text-primary]`
+- `border-[--color-border]`
+- `ring-[--color-focus-ring]`
+
+In the generated CSS these compile into empty or invalid declarations, meaning the provisional semantic tokens are not reliably applied.
+
+## Fix
+
+Replace CSS-variable utility usage with Tailwind v4-compatible custom-property syntax.
+
+Prefer the concise v4 form, for example:
+
+- `bg-(--color-surface)`
+- `text-(--color-text-primary)`
+- `border-(--color-border)`
+- `ring-(--color-focus-ring)`
+
+Equivalent `var(...)` arbitrary-value syntax is also acceptable where necessary:
+
+- `bg-[var(--color-surface)]`
+
+Apply the correction consistently across the Checkpoint C UI, including:
+
+- page/surface backgrounds,
+- primary/secondary/tertiary text,
+- borders,
+- informational disclosure colors,
+- all three status badge colors,
+- button colors,
+- input placeholder colors,
+- hover colors,
+- focus-ring colors.
+
+Do not change the actual provisional token values unless required to fix a contrast defect.
+
+Do not add new colors or redesign the interface.
+
+## Verification
+
+After the change:
+
+1. Run the production build.
+2. Inspect the generated CSS and confirm representative semantic utilities now contain real declarations rather than empty rules.
+3. Verify examples such as:
+   - page background,
+   - normal text,
+   - card border,
+   - disclosure surface,
+   - Negative badge,
+   - Below Cushion badge,
+   - Above Cushion badge,
+   - focus state.
+4. Run:
+   - `pnpm test`
+   - `pnpm type-check`
+   - `pnpm lint`
+   - `pnpm build`
+
+Report:
+
+1. Files changed.
+2. Syntax used for CSS custom-property utilities.
+3. Confirmation that generated CSS now contains actual token-backed declarations.
+4. Final quality-check results.
+5. Confirmation that:
+   - no new product functionality was added,
+   - Task 6 did not begin,
+   - nothing was committed,
+   - nothing was pushed.
+
+Stop after the report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T18:40:40Z
+
+Checkpoint C — Tasks 3, 4, and 5 have passed review and are approved.
+
+Do not begin Task 6 yet.
+
+The complete Demo Mode product is approved, including the Tailwind v4 semantic-token correction.
+
+## Approved Checkpoint C scope
+
+The following are accepted:
+
+- deterministic six-month Demo dataset,
+- `DEMO_DEFAULT_PAYMENT = 475`,
+- `DEMO_DEFAULT_CUSHION = 300`,
+- default distribution:
+  - 1 Negative,
+  - 2 Below Cushion,
+  - 3 Above Cushion,
+- Demo adapter using the shared normalized `FinancialHistory`,
+- `firstSupportedMonth = M−6`,
+- FIAT-ready local UI abstraction layer,
+- provisional centralized semantic design tokens,
+- mobile-primary responsive layout,
+- complete desktop adaptation,
+- payment and cushion inputs,
+- 200ms debounced updates,
+- validation behavior,
+- retrospective summary,
+- sequential month cards,
+- expandable factual month detail,
+- retrospective disclosure,
+- non-judgmental status labels,
+- accessibility baseline,
+- React Testing Library coverage.
+
+The Tailwind v4 custom-property fix is also approved:
+
+`(--color-*)`
+
+instead of the prior invalid:
+
+`[--color-*]`
+
+The Tailwind source exclusions for:
+
+- `docs/**`
+- `.kiro/**`
+
+are approved because those directories contain documentation/spec examples and should not generate runtime utility classes.
+
+---
+
+## Final pre-commit verification
+
+Before committing:
+
+1. Run `git status`.
+2. Inspect the complete Checkpoint C diff.
+3. Verify all changes belong to:
+   - Demo dataset and adapter,
+   - Demo integration tests,
+   - UI components,
+   - local presentation primitives,
+   - app/layout/styles,
+   - RTL test configuration,
+   - approved testing dependency update,
+   - Task 3–5 execution status,
+   - collaboration-history capture.
+
+4. Confirm no:
+   - Plaid API routes,
+   - Plaid Link client code,
+   - Task 6 implementation,
+   - FIAT packages,
+   - Recharts,
+   - unrelated dependencies,
+   - secrets,
+   - `.env.local`
+
+are included.
+
+---
+
+## Re-run Checkpoint C quality checks
+
+Run:
+
+`pnpm test`
+`pnpm type-check`
+`pnpm lint`
+`pnpm build`
+
+Confirm:
+
+- all 118 tests pass,
+- TypeScript is clean,
+- ESLint is clean,
+- production build succeeds.
+
+Also verify representative generated Tailwind CSS one final time and confirm semantic token utilities resolve to actual `var(--color-*)` declarations.
+
+---
+
+## Update task progress
+
+Update `tasks.md` to mark:
+
+- Task 3 — Complete
+- Task 4 — Complete
+- Task 5 — Complete
+
+Do not mark Task 6 or later tasks as started or complete.
+
+Checkpoint C should be shown as complete.
+
+---
+
+## Collaboration history
+
+Verify `docs/ai-collaboration/prompts.md` includes the complete Checkpoint C sequence, including:
+
+- initial Tasks 3–5 implementation prompt,
+- visual-verification follow-up,
+- Tailwind v4 styling correction,
+- this approval/closure prompt.
+
+Preserve the raw prompt history.
+
+---
+
+## Commit
+
+Stage only the approved Checkpoint C changes.
+
+Create the commit:
+
+`feat: build Affordly demo experience`
+
+Push it to:
+
+`main`
+
+on the configured Affordly GitHub remote.
+
+Do not begin Task 6 after pushing.
+
+---
+
+## Completion report
+
+After the push succeeds, report:
+
+1. Commit hash
+2. Files included
+3. Tasks 3, 4, and 5 completion status
+4. Final total test count
+5. Results of:
+   - `pnpm test`
+   - `pnpm type-check`
+   - `pnpm lint`
+   - `pnpm build`
+6. Confirmation that Demo Mode renders six historical months with the approved default distribution
+7. Confirmation that semantic Tailwind token utilities compile to `var(--color-*)`
+8. Confirmation that the local UI layer remains FIAT-ready
+9. Confirmation that Checkpoint C collaboration prompts were committed
+10. Remote and branch pushed
+11. Final `git status`
+12. Confirmation that:
+   - Task 6 has not begun,
+   - no Plaid routes exist,
+   - no Plaid Link integration exists,
+   - no FIAT packages were installed,
+   - no Recharts package was installed,
+   - no secrets were committed.
+
+Stop after the Checkpoint C closure report.
+
+*End of entry*

@@ -160,8 +160,7 @@ React, Next.js, or Plaid. It is the product's most critical code path.
 ## Task 3 — Deterministic Demo Mode Dataset and Adapter
 
 **Checkpoint:** C (begins)  
-**Dependencies:** Task 2  
-**Requirements ref:** §1 (Demo Mode), §8 (Month Detail)  
+**Status:** ✅ Complete  
 **Design ref:** §8 (Demo Mode Design), §7.1 (Demo Adapter)
 
 Build the authored sample dataset and adapter so the application has a complete, testable
@@ -203,8 +202,7 @@ financial history before Plaid is touched.
 ## Task 4 — Mobile-Primary Application Shell and Provisional UI Layer
 
 **Checkpoint:** C (continues)  
-**Dependencies:** Tasks 2, 3  
-**Requirements ref:** §14 (Visual Design, Responsiveness, Accessibility)  
+**Status:** ✅ Complete  
 **Design ref:** §2.3 (Interim Strategy), §2.4 (Provisional Policy), §10 (File Structure)
 
 Establish the application structure and the thin presentation abstraction layer. Optimized for
@@ -253,8 +251,7 @@ provisional and centralized for later FIAT replacement.
 ## Task 5 — Core Affordly Interaction Experience (Demo Mode)
 
 **Checkpoint:** C (completes)  
-**Dependencies:** Tasks 3, 4  
-**Requirements ref:** §§1–8, §§12–14 (all core product requirements)  
+**Status:** ✅ Complete  
 **Design ref:** §§11–13 (UI Components, UX Design, State)
 
 Build the complete Demo Mode product experience. At the end of this task, Affordly is a

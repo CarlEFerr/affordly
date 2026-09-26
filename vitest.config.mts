@@ -6,15 +6,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
-    // jsdom provides the DOM environment for component tests.
-    // Pure TypeScript analysis/adapter/utility tests will use
-    // // @vitest-environment node annotations to opt out of jsdom overhead.
+    // jsdom for component tests. Pure analysis tests annotate with @vitest-environment node.
     environment: 'jsdom',
-    globals: false,
-    // Do NOT set passWithNoTests: true here.
-    // The normal `pnpm test` command must fail when no tests exist.
-    // For Checkpoint A foundation verification only, use:
-    //   pnpm exec vitest run --passWithNoTests
+    // globals: true exposes describe/it/expect/vi globally so jest-dom v7 can extend expect.
+    globals: true,
+    setupFiles: ['./src/__tests__/setup.ts'],
   },
   resolve: {
     alias: {
