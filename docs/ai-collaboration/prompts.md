@@ -5498,3 +5498,775 @@ After the push succeeds, report:
 Stop after the Checkpoint A closure report.
 
 *End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T17:20:26Z
+
+Begin **Checkpoint B — Task 2: Pure Financial Domain and Analysis Engine**.
+
+Execute Task 2 only.
+
+Do not begin Tasks 3–11.
+
+Do not create Demo Mode yet.
+
+Do not implement Plaid API routes or Plaid adapters yet.
+
+Do not build application UI.
+
+Do not commit or push until I explicitly approve Checkpoint B.
+
+Before implementation, apply the approved design clarification below because the current design/task wording contains a coverage-boundary contradiction.
+
+---
+
+# Preflight design clarification — explicit history coverage
+
+The existing design infers the earliest supported complete month directly from the earliest transaction.
+
+That works conservatively for Plaid but conflicts with Demo Mode.
+
+Demo Mode is intentionally authored as exactly six complete months, M−1 through M−6. If its earliest transaction is in M−6 and the engine automatically treats that month as a partial boundary month, Demo would incorrectly analyze only five months.
+
+Do **not** special-case Demo inside the analysis engine.
+
+Instead, make history coverage explicit in the normalized source-independent data model.
+
+## Normalized history contract
+
+Revise the normalized history concept so it carries the earliest calendar month that the source adapter guarantees is fully supported.
+
+Use a concept such as:
+
+```ts
+interface FinancialHistory {
+  source: 'demo' | 'plaid';
+  accountName: string;
+  transactions: NormalizedTransaction[];
+  firstSupportedMonth: MonthKey | null;
+}
+```
+
+The exact property organization may be slightly different if a clearer name or nested `coverage` structure improves readability, but preserve this meaning.
+
+`firstSupportedMonth` means:
+
+> the earliest complete calendar month that may safely participate in the backtest.
+
+The analysis engine must use this metadata and must **not infer source-specific coverage semantics from transaction presence**.
+
+### Future source behavior
+
+Document now, without implementing the adapters yet:
+
+**Demo adapter**
+- will provide `firstSupportedMonth = M−6`,
+- because the authored Demo dataset explicitly guarantees six complete months.
+
+**Plaid adapter**
+- will determine the earliest retrieved posted-transaction month,
+- treat that month as the possibly partial boundary month,
+- provide the following calendar month as `firstSupportedMonth`,
+- or provide no supported month when available data cannot establish one.
+
+The financial engine must not branch on:
+
+```ts
+history.source
+```
+
+to make this decision.
+
+Adapters establish coverage.
+
+The engine consumes coverage.
+
+This preserves one shared analysis path for Demo and Plaid.
+
+---
+
+# Update approved documentation before implementation
+
+Make the smallest necessary amendments to:
+
+- `design.md`
+- `tasks.md`
+
+to document this clarification.
+
+Do not reopen unrelated design decisions.
+
+Keep their approved status, but add a concise implementation clarification/amendment indicating that the normalized model now carries explicit supported-history metadata.
+
+Update Task 2 and the future Task 3 / Task 6 wording where necessary so they no longer contradict this model.
+
+Do not modify `requirements.md`; the approved product requirements do not need to change.
+
+---
+
+# Additional architecture cleanup — keep API types out of the financial core
+
+Checkpoint B is the pure financial domain.
+
+Do not put Plaid/server API response types into:
+
+`src/lib/analysis/types.ts`
+
+The analysis type module should contain only source-independent financial concepts needed by the engine, such as:
+
+- `MonthKey`
+- `NormalizedTransaction`
+- `FinancialHistory`
+- `MonthlyAggregation`
+- `MonthStatus`
+- `SimulatedMonth`
+- `BacktestResult`
+- analysis eligibility/result types
+
+Types such as:
+
+- `AffordlyErrorCode`
+- `ApiErrorResponse`
+- `PlaidConnectResponse`
+
+belong to the later API/Plaid implementation and should be introduced in Task 6 in an appropriate API boundary module.
+
+Update `tasks.md` / `design.md` minimally to reflect that separation.
+
+The core engine must remain ignorant of Plaid and server-response contracts.
+
+---
+
+# 1. Implement source-independent domain types
+
+Create the approved analysis type module.
+
+At minimum define the concepts required by the pure engine.
+
+## Normalized transaction
+
+Use the approved source-neutral sign convention:
+
+- positive amount = cash into checking account
+- negative amount = cash out of checking account
+
+The normalized transaction must contain only the fields needed by Affordly's analysis/detail experience.
+
+Do not import Plaid types.
+
+## Financial history
+
+Include explicit supported-history metadata as described above.
+
+No source-specific calculation behavior belongs here.
+
+## Month-level results
+
+Represent:
+
+- cash in
+- cash out
+- original monthly cash flow
+- top transactions
+- simulated monthly cash flow
+- month status
+
+## Backtest result
+
+Represent:
+
+- analyzed months
+- proposed payment
+- cushion
+- three status counts
+- actual number of analyzed months
+- analyzed period label
+
+Prefer a typed eligibility result over throwing expected errors for insufficient history.
+
+---
+
+# 2. Implement date utilities
+
+Implement UTC-safe calendar-month helpers required by the engine.
+
+Include concepts such as:
+
+- month key generation: `YYYY-MM`
+- month offset calculations across year boundaries
+- month-label formatting
+- comparison/order where needed
+
+Test year-boundary behavior.
+
+Examples worth covering:
+
+- January M−1 → December of previous year
+- January M−6 crosses into previous year correctly
+
+Do not use current local timezone for month-boundary decisions.
+
+The engine should accept `today` as an injectable `Date` for deterministic tests.
+
+---
+
+# 3. Implement supported complete-month selection
+
+Replace the previous transaction-inference approach.
+
+Conceptually:
+
+```text
+Input:
+FinancialHistory
+today
+
+Candidates:
+M−1, M−2, M−3, M−4, M−5, M−6
+
+Coverage:
+history.firstSupportedMonth
+```
+
+Rules:
+
+1. Current month M is always excluded.
+2. Generate the six candidate complete months M−1 through M−6.
+3. Include the contiguous candidates that are on or after `firstSupportedMonth`.
+4. A supported month remains included even if it contains zero transactions.
+5. Never generate a sparse month sequence based on transaction presence.
+6. Maximum = six months.
+7. If fewer than three supported complete months exist, return an ineligible result.
+8. If 3–5 exist, return those actual months.
+9. If six exist, return all six.
+
+If `firstSupportedMonth` is null or otherwise cannot establish at least three supported complete months, return ineligible.
+
+## Required tests
+
+### Full six months
+
+`firstSupportedMonth = M−6`
+
+→ M−1 through M−6  
+→ six months eligible.
+
+This is the behavior Demo Mode will use.
+
+### Exactly three
+
+`firstSupportedMonth = M−3`
+
+→ M−1, M−2, M−3  
+→ eligible.
+
+### Only two
+
+`firstSupportedMonth = M−2`
+
+→ M−1, M−2  
+→ ineligible.
+
+### Zero-transaction interior month
+
+Coverage supports M−6 through M−1, but M−3 has no transactions.
+
+→ M−3 remains in the returned month sequence.
+
+### Older history
+
+`firstSupportedMonth` predates M−6.
+
+→ still return only M−1 through M−6.
+
+### Future/invalid coverage
+
+Handle defensively and return ineligible rather than producing an invalid range.
+
+---
+
+# 4. Implement monthly aggregation
+
+For a selected supported month:
+
+```text
+cashIn = sum of positive transaction amounts
+cashOut = absolute sum of negative transaction amounts
+monthlyCashFlow = cashIn - cashOut
+```
+
+A zero-transaction supported month must produce:
+
+```text
+cashIn = 0
+cashOut = 0
+cashFlow = 0
+topTransactions = []
+```
+
+Top transactions:
+
+- use all normalized transactions in that month,
+- order by absolute amount descending,
+- return at most three,
+- inflows and outflows compete for the same slots,
+- return fewer when fewer exist.
+
+Do not interpret transactions.
+
+Do not categorize or explain them.
+
+---
+
+# 5. Implement simulation and classification
+
+For each monthly aggregation:
+
+```text
+simulatedCashFlow = monthlyCashFlow - proposedPayment
+```
+
+Canonical classification:
+
+```text
+simulatedCashFlow < 0
+→ Negative
+
+simulatedCashFlow >= 0 AND simulatedCashFlow < cushion
+→ Below Cushion
+
+simulatedCashFlow >= cushion
+→ Above Cushion
+```
+
+Required boundary tests:
+
+```text
+simulated = 0
+cushion = 0
+→ Above Cushion
+```
+
+```text
+simulated = 0
+cushion > 0
+→ Below Cushion
+```
+
+```text
+simulated = cushion
+cushion > 0
+→ Above Cushion
+```
+
+A zero cushion must make Below Cushion impossible.
+
+The classifier must be pure.
+
+---
+
+# 6. Implement the backtest runner
+
+Implement one public source-independent analysis entry point, conceptually:
+
+```ts
+runBacktest(history, proposedPayment, cushionTarget, today?)
+```
+
+Pipeline:
+
+```text
+FinancialHistory
+→ select supported complete months
+→ aggregate each month
+→ simulate payment
+→ classify month
+→ calculate counts
+→ construct period label
+→ BacktestResult
+```
+
+The result months must be:
+
+```text
+most recent first
+M−1 → oldest analyzed month
+```
+
+If history supports fewer than three complete months:
+
+return the typed ineligible result.
+
+Do not throw an exception for this expected product state.
+
+Do not inspect `history.source` to alter calculations.
+
+---
+
+# 7. Currency utility boundaries
+
+Implement only the currency utilities genuinely useful to both this engine and the later UI.
+
+`formatCurrency()` is appropriate as a shared utility.
+
+For parsing/validation, do not create one ambiguous helper that treats payment and cushion identically when their business rules differ.
+
+Remember:
+
+```text
+payment > 0
+cushion >= 0
+```
+
+If implementing parsing in this checkpoint:
+
+- separate syntactic currency parsing from field-specific validation,
+
+or
+
+- make validation constraints explicit/configurable.
+
+Do not bury the payment/cushion business distinction inside an unclear generic parser.
+
+Do not implement React input behavior yet.
+
+---
+
+# 8. Unit tests
+
+This checkpoint should be heavily test-driven because financial correctness is the product's core claim.
+
+Create focused unit tests for:
+
+## Month selection
+- M−1 through M−6
+- year boundaries
+- six supported months
+- exactly three supported months
+- fewer than three
+- firstSupportedMonth older than analysis window
+- zero-transaction interior months remain present
+- current partial month excluded
+
+## Aggregation
+- normal inflow/outflow case
+- zero inflow
+- zero outflow
+- zero transactions
+- only inflows
+- only outflows
+- top-three bidirectional ordering
+- fewer than three transactions
+
+## Simulation
+- normal subtraction
+- all three statuses
+- exact zero boundaries
+- exact cushion boundary
+- zero cushion
+
+## Backtest
+- correct status counts
+- correct month ordering
+- correct period label
+- correct 3–5 month partial window
+- typed insufficient-history result
+- source-independence: identical normalized financial histories produce identical results regardless of source label
+
+Do not mock React, Next.js, or Plaid.
+
+These should be pure deterministic tests.
+
+---
+
+# 9. Quality expectations
+
+Keep functions:
+
+- small,
+- pure,
+- explicitly typed,
+- easy to review,
+- free from unnecessary abstractions.
+
+Do not introduce classes unless they provide a concrete benefit.
+
+Do not introduce:
+- React
+- Next.js dependencies in the engine
+- Plaid SDK imports
+- state libraries
+- date libraries unless an actual need is discovered
+
+Native JavaScript/TypeScript date handling is sufficient for these month operations.
+
+Do not optimize prematurely.
+
+---
+
+# 10. Run Checkpoint B verification
+
+Run:
+
+```bash
+pnpm test
+pnpm type-check
+pnpm lint
+pnpm build
+```
+
+`pnpm test` must now run actual tests.
+
+Do not use:
+
+`--passWithNoTests`
+
+from this point onward.
+
+Also inspect the engine dependency boundary and confirm:
+
+- no React imports,
+- no Next.js imports,
+- no Plaid imports,
+- no FIAT imports.
+
+---
+
+# 11. Inspect implementation diff
+
+Run:
+
+- `git status`
+- `git diff --stat`
+- `git diff`
+
+Verify only intended Checkpoint B work is present:
+
+- pure financial engine,
+- utilities,
+- tests,
+- minimal approved design/tasks clarification,
+- collaboration history.
+
+Do not stage, commit, or push yet.
+
+---
+
+# Stop condition — Checkpoint B human gate
+
+After Task 2 is complete, stop.
+
+Do not begin Task 3.
+
+Do not begin Task 4.
+
+Do not begin Task 6.
+
+Report:
+
+1. Documentation clarification applied to `design.md` / `tasks.md`.
+2. Final normalized `FinancialHistory` coverage shape.
+3. Files created.
+4. Analysis functions implemented.
+5. Number of unit tests and test files.
+6. Results of:
+   - `pnpm test`
+   - `pnpm type-check`
+   - `pnpm lint`
+   - `pnpm build`
+7. Verification that Demo-compatible six-month coverage now works when `firstSupportedMonth = M−6`.
+8. Verification that Plaid can later provide its conservative boundary-derived first supported month without engine branching.
+9. Any design deviation or unexpected implementation issue.
+10. Confirmation that the pure engine has no React, Next.js, Plaid, or FIAT dependency.
+11. Confirmation that:
+   - Task 3 did not begin,
+   - Task 4 did not begin,
+   - Task 6 did not begin,
+   - no product UI was implemented,
+   - no Plaid route was implemented,
+   - nothing was committed,
+   - nothing was pushed.
+12. Final `git status`.
+
+Wait for explicit human approval before committing Checkpoint B or proceeding to Checkpoint C.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T17:33:40Z
+
+Checkpoint B — Task 2 has passed and is approved.  
+  
+Do not begin Checkpoint C yet.  
+  
+Do not begin Task 3, Task 4, Task 5, or Task 6.  
+  
+The pure financial engine and its approved design clarification are accepted.  
+  
+## Approved implementation  
+  
+The following are approved:  
+  
+- explicit `firstSupportedMonth` coverage metadata on normalized financial history,  
+- one source-independent analysis engine,  
+- Demo-compatible six-month coverage when `firstSupportedMonth = M−6`,  
+- future Plaid conservative coverage supplied by its adapter rather than inferred by the engine,  
+- pure UTC-safe month/date logic,  
+- monthly cash-flow aggregation,  
+- bidirectional top-three transaction selection,  
+- hypothetical payment simulation,  
+- canonical month-status classification,  
+- typed insufficient-history behavior,  
+- currency formatting and syntactic parsing utilities,  
+- separation of API/Plaid response types from the financial-analysis domain,  
+- comprehensive pure unit-test coverage.  
+  
+The amendments to `design.md` and `tasks.md` are approved as implementation clarifications and do not reopen the previously approved product scope.  
+  
+---  
+  
+## Final pre-commit verification  
+  
+Before committing:  
+  
+1. Run `git status`.  
+2. Inspect the complete diff.  
+3. Confirm intended Checkpoint B changes are limited to:  
+   - pure `src/lib/` financial/domain implementation,  
+   - pure unit tests,  
+   - targeted `design.md` clarification,  
+   - targeted `tasks.md` clarification/progress,  
+   - collaboration-history updates.  
+  
+4. Confirm no:  
+   - product UI,  
+   - Demo dataset,  
+   - Plaid route,  
+   - Plaid adapter,  
+   - FIAT implementation,  
+   - unrelated package/dependency change,  
+   - `.env.local`,  
+   - credential or secret  
+  
+is included.  
+  
+---  
+  
+## Re-run Checkpoint B validation  
+  
+Run:  
+  
+```bash  
+pnpm test  
+pnpm type-check  
+pnpm lint  
+pnpm build  
+```  
+  
+Confirm:  
+  
+- all tests pass,  
+- `pnpm test` runs normally with actual tests,  
+- no `--passWithNoTests` is used,  
+- type checking is clean,  
+- lint is clean,  
+- production build succeeds.  
+  
+Also verify the dependency boundary once more:  
+  
+- no React imports in the financial engine,  
+- no Next.js imports,  
+- no Plaid SDK imports,  
+- no FIAT imports.  
+  
+---  
+  
+## Update task progress  
+  
+Update `tasks.md` to mark:  
+  
+**Task 2 — Pure Financial Domain and Analysis Engine**  
+  
+as complete.  
+  
+Do not mark:  
+- Task 3,  
+- Task 4,  
+- Task 5,  
+- Task 6,  
+- or any later task  
+  
+as started or complete.  
+  
+Checkpoint B is complete only after this commit is pushed.  
+  
+---  
+  
+## Collaboration history  
+  
+Verify `docs/ai-collaboration/prompts.md` contains:  
+  
+- the Checkpoint B implementation prompt,  
+- the resulting clarification process,  
+- this human approval/closure prompt.  
+  
+Preserve the raw collaboration history.  
+  
+---  
+  
+## Commit  
+  
+Stage only the approved Checkpoint B changes.  
+  
+Create the commit:  
+  
+`feat: implement financial backtest engine`  
+  
+Push it to:  
+  
+`main`  
+  
+on the configured Affordly GitHub remote.  
+  
+Do not begin Checkpoint C after pushing.  
+  
+---  
+  
+## Completion report  
+  
+After the push succeeds, report:  
+  
+1. Commit hash  
+2. Files included  
+3. Task 2 completion status  
+4. Number of tests and test files  
+5. Final results of:  
+   - `pnpm test`  
+   - `pnpm type-check`  
+   - `pnpm lint`  
+   - `pnpm build`  
+6. Confirmation that the `firstSupportedMonth` clarification is committed in both design and tasks documentation  
+7. Confirmation that the engine remains source-independent  
+8. Confirmation that the financial engine has no React, Next.js, Plaid, or FIAT imports  
+9. Confirmation that Checkpoint B collaboration prompts were committed  
+10. Remote and branch pushed  
+11. Final `git status`  
+12. Confirmation that:  
+   - Task 3 has not begun,  
+   - Task 4 has not begun,  
+   - Task 5 has not begun,  
+   - Task 6 has not begun,  
+   - no Demo dataset exists yet,  
+   - no product UI exists yet,  
+   - no Plaid route exists yet,  
+   - no secrets were committed.  
+  
+Stop after the Checkpoint B closure report.
+
+*End of entry*

@@ -307,11 +307,19 @@ interface CheckingAccountOption {
   mask: string;        // last 4 digits, e.g. "4321"
 }
 
-// The normalized financial history — the analysis engine's only input
+// The normalized financial history — the analysis engine's only input.
+// firstSupportedMonth carries explicit coverage metadata set by the source adapter.
+// The engine must use this field; it must NOT infer coverage from transaction presence.
+//
+// Demo adapter:  provides firstSupportedMonth = M−6 (all six months guaranteed).
+// Plaid adapter: provides firstSupportedMonth = the calendar month AFTER the boundary
+//                month (the month containing the earliest retrieved transaction),
+//                or null if coverage cannot be established.
 interface FinancialHistory {
   source: 'demo' | 'plaid';
   accountName: string; // "Demo Checking Account" or Plaid account name
   transactions: NormalizedTransaction[];
+  firstSupportedMonth: MonthKey | null; // earliest month the adapter guarantees is complete
 }
 
 // Month-level aggregation (before simulation)
@@ -346,6 +354,9 @@ interface BacktestResult {
 }
 
 // API error code — Affordly classifications, not raw Plaid codes
+// NOTE: This type lives in the API boundary module (src/app/api/ or a dedicated
+// src/lib/api/types.ts introduced in Task 6), NOT in src/lib/analysis/types.ts.
+// The analysis engine has no knowledge of server response contracts.
 type AffordlyErrorCode =
   | 'no_checking_account'
   | 'history_preparing'    // Sandbox history not yet ready after bounded retry
@@ -391,25 +402,37 @@ Algorithm:
    M is derived from today's UTC year/month.
    Complete months are M-1 (most recent) through M-6 (oldest candidate).
 
-2. Determine the history boundary month:
-   - Find the earliest date across all retrieved posted transactions.
-   - boundaryMonth = monthKey of that earliest date.
-   - The boundary month itself is treated as potentially incomplete — we cannot confirm
-     that no activity occurred before the earliest retrieved transaction within that month.
-     (Example: earliest transaction on May 15 does not mean May 1–14 were empty.)
+2. Read `history.firstSupportedMonth`.
+   - If null: return ineligible immediately.
+   - This value is provided by the source adapter; the engine does not infer it.
+   - Demo adapter: sets `firstSupportedMonth = M−6` (all six months guaranteed).
+   - Plaid adapter: sets `firstSupportedMonth` = the month after the boundary month
+     (the boundary month is the calendar month of the earliest retrieved transaction).
 
-3. The first safely supported complete month is the month immediately after the boundary:
-   - firstSupportedMonth = monthKey of (boundaryMonth + 1 month)
-   - Available candidates: the contiguous sequence from firstSupportedMonth through M-1.
-   - Zero-transaction months within this sequence are included and aggregate to
-     cashFlow = $0 (Req 4.4/4.5 applies).
-   - Do NOT produce a sparse sequence. The result is always contiguous.
-   - If the boundary month predates M-6 (i.e., retrieved history is deeper than needed),
-     all six candidate months are supported and the normal six-month analysis applies.
+3. Include the contiguous set of candidate months that are on or after
+   `firstSupportedMonth`. Comparison is lexicographic on "YYYY-MM" keys,
+   which is equivalent to chronological order.
+   - A candidate month within this range is included even if it has zero transactions.
+   - The result is always a contiguous sequence — never sparse.
+   - If `firstSupportedMonth` predates M-6, all six candidate months are supported.
 
-4. If fewer than 3 available months: return { ineligible: true }.
-5. If 3–5 available months: return those months (partial window, displayed accurately).
-6. If 6+ available months: return the 6 most recent (M-1 through M-6).
+4. If fewer than 3 supported months: return { ineligible: true }.
+5. If 3–5 supported months: return those months (partial window).
+6. If 6+ supported months: return the 6 most recent (M-1 through M-6).
+
+Example A — Demo Mode (`firstSupportedMonth = M−6`):
+  Today = October 2026 → candidates = ["2026-09".."2026-04"]
+  firstSupportedMonth = "2026-04" (M-6)
+  All 6 candidates >= "2026-04" → return all 6. ✓
+
+Example B — Plaid with boundary in M-4 (`firstSupportedMonth = M−3`):
+  firstSupportedMonth = "2026-07" (M-3)
+  "2026-09","2026-08","2026-07" are >=; "2026-06" and older are not.
+  → Returns 3 months (eligible).
+
+Example C — Plaid with boundary in M-3 (`firstSupportedMonth = M−2`):
+  firstSupportedMonth = "2026-08" (M-2)
+  Only "2026-09","2026-08" qualify → 2 months → ineligible.
 
 Example A — history deeper than six months (normal case):
   Today = October 2026 (M = "2026-10")

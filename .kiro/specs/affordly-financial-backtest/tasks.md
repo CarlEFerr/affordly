@@ -84,6 +84,7 @@ functionality. Validate that all quality checks pass before a single product fil
 ## Task 2 — Pure Financial Domain and Analysis Engine
 
 **Checkpoint:** B  
+**Status:** ✅ Complete  
 **Dependencies:** Task 1  
 **Requirements ref:** §4–5 (Calculation, Status), §8 (Month Detail), §§6 definitions  
 **Design ref:** §5 (Domain Model), §6 (Analysis Pipeline)
@@ -94,9 +95,11 @@ React, Next.js, or Plaid. It is the product's most critical code path.
 ### Subtasks
 
 - [ ] **2.1 Define normalized domain types** (`src/lib/analysis/types.ts`)
-  - `NormalizedTransaction`, `CheckingAccountOption`, `FinancialHistory`
+  - `NormalizedTransaction`, `FinancialHistory` (with `firstSupportedMonth: MonthKey | null`)
   - `MonthlyAggregation`, `MonthStatus`, `SimulatedMonth`, `BacktestResult`
-  - `AffordlyErrorCode`, `ApiErrorResponse`, `PlaidConnectResponse`
+  - Typed eligibility/ineligible result type
+  - **Do not** include `AffordlyErrorCode`, `ApiErrorResponse`, or `PlaidConnectResponse`
+    in this module — those are API boundary types introduced in Task 6.
 
 - [ ] **2.2 Implement date and currency utilities** (`src/lib/utils/date.ts`, `currency.ts`)
   - `monthKeyAt(today, offsetMonths)` — UTC-safe month key generation
@@ -106,12 +109,13 @@ React, Next.js, or Plaid. It is the product's most critical code path.
     non-numeric, non-finite, sub-cent precision)
 
 - [ ] **2.3 Implement complete month selection** (`src/lib/analysis/months.ts`)
-  - Conservative boundary rule: `boundaryMonth = earliest transaction month`;
-    `firstSupportedMonth = boundaryMonth + 1`.
+  - Uses `history.firstSupportedMonth` directly — does NOT infer coverage from transaction
+    presence. Adapters set this; the engine consumes it.
   - Contiguous window from `firstSupportedMonth` through M-1.
   - Zero-transaction months within the window are valid (cashFlow = $0).
   - No sparse sequences — the result is always contiguous.
-  - Returns `MonthKey[]` or `{ ineligible: true }` when < 3 supported months.
+  - Returns `MonthKey[]` or `{ ineligible: true }` when < 3 supported months or when
+    `firstSupportedMonth` is null.
 
 - [ ] **2.4 Implement monthly cash-flow aggregation** (`src/lib/analysis/aggregation.ts`)
   - `cashIn`, `cashOut`, `cashFlow = cashIn - cashOut`.
@@ -177,6 +181,8 @@ financial history before Plaid is touched.
 
 - [ ] **3.2 Implement demo adapter** (`src/lib/adapters/demo.ts`)
   - `getDemoHistory()` → `FinancialHistory` with `source: 'demo'`.
+  - Sets `firstSupportedMonth = monthKeyAt(today, 6)` (M-6) — explicitly guarantees all
+    six months. The engine never needs to infer Demo's coverage from transaction presence.
 
 - [ ] **3.3 Write a dataset integration test**
   - Confirm `runBacktest(getDemoHistory(), 475, 300)` produces exactly the expected status
@@ -401,6 +407,12 @@ It is independent of Tasks 3–5 (Demo/UI) and may be implemented in parallel wi
     - Filter `pending === false` (verify the correct SDK field name for posted status).
     - Map: `amount = -(plaidAmount)` (sign flip), `description = merchant_name ?? name`,
       `date`, `id = transaction_id`.
+  - The adapter computes `firstSupportedMonth`: find the earliest transaction date,
+    treat that calendar month as the boundary, return the following month as
+    `firstSupportedMonth`. Set to `null` if no transactions are available.
+  - API boundary types (`AffordlyErrorCode`, `ApiErrorResponse`, `PlaidConnectResponse`,
+    `CheckingAccountOption`) are introduced here or in a co-located `src/lib/api/types.ts`.
+    They must NOT be in `src/lib/analysis/types.ts`.
 
 - [ ] **6.5 Write adapter and reconciliation tests**
     (`src/__tests__/adapters/plaid.test.ts`)
