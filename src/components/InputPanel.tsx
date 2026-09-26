@@ -16,7 +16,7 @@
  */
 import { useState, useRef, useCallback } from 'react';
 import CurrencyInput from '@/components/ui/CurrencyInput';
-import { parseCurrencyString, formatCurrency } from '@/lib/utils/currency';
+import { parseCurrencyString } from '@/lib/utils/currency';
 
 const DEBOUNCE_MS = 200;
 
@@ -121,9 +121,6 @@ export default function InputPanel({
       onCushionChange(null);
     }
   }, [rawCushion, onCushionChange, validateCushion]);
-
-  // Suppress the unused import warning — formatCurrency used for aria-label context
-  void formatCurrency;
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">

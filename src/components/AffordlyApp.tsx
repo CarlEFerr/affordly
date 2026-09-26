@@ -14,7 +14,7 @@ import { runBacktest, isIneligible } from '@/lib/analysis/index';
 import { getDemoHistory } from '@/lib/adapters/demo';
 import { DEMO_DEFAULT_PAYMENT, DEMO_DEFAULT_CUSHION } from '@/lib/demo/dataset';
 import type { FinancialHistory, BacktestResult } from '@/lib/analysis/types';
-import type { ApiErrorResponse, PlaidConnectResponse, PlaidAccountData } from '@/lib/api/types';
+import type { ApiErrorResponse, PlaidConnectResponse, PlaidAccountData, AffordlyErrorCode } from '@/lib/api/types';
 
 import DataModeBar from '@/components/DataModeBar';
 import InputPanel from '@/components/InputPanel';
@@ -36,6 +36,7 @@ export default function AffordlyApp() {
   // Plaid connection state
   const [plaidStatus, setPlaidStatus] = useState<PlaidStatus>('idle');
   const [plaidError, setPlaidError] = useState<string | null>(null);
+  const [plaidErrorCode, setPlaidErrorCode] = useState<AffordlyErrorCode | null>(null);
   const [accountOptions, setAccountOptions] = useState<PlaidAccountData[] | null>(null);
 
   // User inputs — preserved when switching modes
@@ -77,6 +78,7 @@ export default function AffordlyApp() {
 
   const handlePlaidError = (error: Omit<ApiErrorResponse, 'error'> & { error: string }) => {
     setPlaidError(error.error);
+    setPlaidErrorCode(error.code);
     setPlaidStatus('error');
   };
 
@@ -109,6 +111,7 @@ export default function AffordlyApp() {
     setDataMode('demo');
     setPlaidStatus('idle');
     setPlaidError(null);
+    setPlaidErrorCode(null);
     setAccountOptions(null);
     setExpandedMonthKey(null);
     // Payment and cushion are preserved
@@ -161,19 +164,44 @@ export default function AffordlyApp() {
 
         {/* ── Plaid error state ───────────────────────────────── */}
         {plaidStatus === 'error' && plaidError && (
-          <div
-            role="alert"
-            className="rounded-lg border border-(--color-status-negative-border) bg-(--color-status-negative-surface) px-4 py-3 mb-6"
-          >
-            <p className="text-sm text-(--color-status-negative-text)">{plaidError}</p>
-            <button
-              type="button"
-              onClick={switchToDemo}
-              className="mt-2 text-sm font-medium text-(--color-text-primary) underline"
+          plaidErrorCode === 'history_preparing' ? (
+            /* history_preparing is not a failure — it's a timing issue */
+            <div
+              role="status"
+              aria-live="polite"
+              className="rounded-lg border border-(--color-border) bg-(--color-surface) px-4 py-3 mb-6"
             >
-              Use Demo Data instead
-            </button>
-          </div>
+              <p className="text-sm font-semibold text-(--color-text-primary) mb-1">
+                Account history isn&apos;t ready yet
+              </p>
+              <p className="text-sm text-(--color-text-secondary)">
+                Plaid is still building your transaction history. Wait a moment and try
+                connecting again, or explore with Demo Data.
+              </p>
+              <button
+                type="button"
+                onClick={switchToDemo}
+                className="mt-3 text-sm font-medium text-(--color-text-primary) underline"
+              >
+                Use Demo Data instead
+              </button>
+            </div>
+          ) : (
+            /* Actual error — connection failed, no account found, etc. */
+            <div
+              role="alert"
+              className="rounded-lg border border-(--color-status-negative-border) bg-(--color-status-negative-surface) px-4 py-3 mb-6"
+            >
+              <p className="text-sm text-(--color-status-negative-text)">{plaidError}</p>
+              <button
+                type="button"
+                onClick={switchToDemo}
+                className="mt-2 text-sm font-medium text-(--color-text-primary) underline"
+              >
+                Use Demo Data instead
+              </button>
+            </div>
+          )
         )}
 
         {/* ── Account selector (multiple checking accounts) ───── */}
@@ -212,14 +240,17 @@ export default function AffordlyApp() {
                 aria-live="polite"
                 className="rounded-xl border border-(--color-border) bg-(--color-surface) px-4 py-6 text-center mb-6"
               >
+                <p className="text-sm font-medium text-(--color-text-primary) mb-1">
+                  Not enough history to run a backtest
+                </p>
                 <p className="text-sm text-(--color-text-secondary)">
-                  This account needs at least 3 complete months of transaction history
-                  for a backtest.
+                  At least 3 complete calendar months are needed. This account
+                  doesn&apos;t have sufficient history yet.
                 </p>
                 <button
                   type="button"
                   onClick={switchToDemo}
-                  className="mt-2 text-sm font-medium text-(--color-text-primary) underline"
+                  className="mt-3 text-sm font-medium text-(--color-text-primary) underline"
                 >
                   Use Demo Data instead
                 </button>
@@ -244,7 +275,7 @@ export default function AffordlyApp() {
                   className="rounded-xl border border-(--color-border) bg-(--color-surface) px-4 py-8 text-center"
                 >
                   <p className="text-sm text-(--color-text-secondary)">
-                    Enter a payment amount and cushion target to see the backtest.
+                    Enter a payment amount above $0 and a cushion target to run the backtest.
                   </p>
                 </div>
               )

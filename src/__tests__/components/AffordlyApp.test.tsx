@@ -30,7 +30,7 @@ describe('AffordlyApp — Demo Mode on render', () => {
     render(<AffordlyApp />);
     // Month cards are rendered when both inputs have valid defaults
     // The summary statement is the clearest indicator that 6 months are analyzed
-    expect(screen.getByText(/last 6 months/i)).toBeInTheDocument();
+    expect(screen.getByText(/of the last 6 analyzed months/i)).toBeInTheDocument();
   });
 
   it('shows the backtest summary with the default payment', () => {
@@ -94,7 +94,7 @@ describe('AffordlyApp — Input validation', () => {
     const cushionErrors = alerts.filter(a => a.textContent?.includes('cushion'));
     expect(cushionErrors).toHaveLength(0);
     // Results should still show (zero cushion is valid)
-    expect(screen.getByText(/last 6 months/i)).toBeInTheDocument();
+    expect(screen.getByText(/of the last 6 analyzed months/i)).toBeInTheDocument();
   });
 });
 
@@ -118,7 +118,7 @@ describe('AffordlyApp — Input update behavior (debounce via blur)', () => {
     render(<AffordlyApp />);
 
     // With default $475 payment and $300 cushion: 3 months not meeting cushion
-    expect(screen.getByText(/3 of your last 6 months/)).toBeInTheDocument();
+    expect(screen.getByText(/3 of the last 6 analyzed months/)).toBeInTheDocument();
 
     // Reduce cushion to $0 — only negative months don't meet cushion
     const cushionInput = screen.getByLabelText(/monthly cushion/i);
@@ -127,7 +127,7 @@ describe('AffordlyApp — Input update behavior (debounce via blur)', () => {
     await user.tab();
 
     // With $0 cushion, only 1 negative month doesn't meet the cushion
-    expect(screen.getByText(/1 of your last 6 months/)).toBeInTheDocument();
+    expect(screen.getByText(/1 of the last 6 analyzed months/)).toBeInTheDocument();
   });
 });
 

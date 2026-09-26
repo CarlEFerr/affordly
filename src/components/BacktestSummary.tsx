@@ -30,19 +30,15 @@ function buildSummaryText(result: BacktestResult): string {
     );
   }
 
-  const monthWord = notMeetingCushion === 1 ? 'month' : 'months';
   let summary =
-    `With a ${payment} monthly payment, ${notMeetingCushion} of your last ` +
-    `${totalMonths} months would have fallen below your ${cushion} cushion`;
+    `With a ${payment} monthly payment, ${notMeetingCushion} of the last ${totalMonths} analyzed months ` +
+    `would have fallen below your ${cushion} cushion`;
 
   if (countNegative > 0) {
-    const negWord = countNegative === 1 ? 'month' : 'months';
-    summary += `, including ${countNegative} ${negWord} that would have gone negative`;
+    summary += `, including ${countNegative} that would have gone negative`;
   }
 
   return summary + '.';
-
-  void monthWord; // suppress unused var warning (used conceptually)
 }
 
 export default function BacktestSummary({ result }: BacktestSummaryProps) {

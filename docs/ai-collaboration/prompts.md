@@ -9389,3 +9389,1272 @@ After the push succeeds, report:
 Stop after the Checkpoint D closure report.
 
 *End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T20:09:54Z
+
+Begin **Checkpoint E — Submission Ready**, pre-deployment stage.
+
+Work only on:
+
+- **Task 9 — UX Polish and Accessibility Pass**
+- the local/pre-deployment portions of **Task 10 — Documentation, Deployment, and Assessment Readiness**
+
+Do not begin conditional Task 11 / FIAT integration.
+
+Do not commit.
+
+Do not push.
+
+Do not deploy yet.
+
+The purpose of this stage is to make the complete Affordly product ready for final review before the commit that triggers Vercel deployment.
+
+---
+
+# Before making changes
+
+Read:
+
+- approved `requirements.md`
+- approved `design.md`
+- approved `tasks.md`
+- current README
+- current `.env.example`
+- current application UI
+- current tests
+
+Run:
+
+- `git status`
+- `pnpm test`
+- `pnpm type-check`
+- `pnpm lint`
+- `pnpm build`
+
+Confirm:
+
+- working tree is clean,
+- 154 tests pass,
+- Checkpoint D remains green.
+
+If unexpected pre-existing changes exist, stop and report them.
+
+---
+
+# 1. Perform the contained UX polish pass
+
+Do not redesign Affordly.
+
+Do not introduce a new visual direction.
+
+Do not create elaborate custom styling that will conflict with FIAT later.
+
+Polish only what materially improves clarity, interaction quality, accessibility, or responsiveness.
+
+Review:
+
+- spacing rhythm,
+- heading hierarchy,
+- input alignment,
+- card spacing,
+- summary readability,
+- status readability,
+- loading states,
+- validation states,
+- Plaid error states,
+- insufficient-history state,
+- account-selection state,
+- Demo ↔ Plaid switching.
+
+Keep the product feeling like a focused sequential decision tool rather than a dashboard.
+
+---
+
+# 2. Mobile review
+
+Review the implementation for approximately 375px behavior.
+
+Verify in code/tests where possible:
+
+- no fixed widths that could overflow,
+- long account/transaction descriptions wrap,
+- currency values remain readable,
+- controls have reasonable touch targets,
+- card expansion does not depend on tiny icons,
+- inputs remain usable,
+- error messages wrap cleanly,
+- buttons remain accessible.
+
+Do not claim actual rendered visual verification if this environment still lacks browser/display access.
+
+Report anything requiring final reviewer visual confirmation separately.
+
+---
+
+# 3. Desktop review
+
+Preserve the approved desktop structure:
+
+- centered content,
+- comfortable max-width,
+- inputs may sit side-by-side,
+- month cards remain sequential and vertical,
+- no dashboard grid,
+- no charts.
+
+Do not create desktop-only product behavior.
+
+---
+
+# 4. Keyboard and focus accessibility
+
+Review every interactive path:
+
+- payment input,
+- cushion input,
+- Connect Plaid Sandbox,
+- Plaid Link launch,
+- month expand/collapse,
+- inline account selection,
+- Use Demo Data,
+- retry/reconnect actions.
+
+Verify:
+
+- semantic interactive elements are used,
+- tab order is logical,
+- controls are keyboard operable,
+- focus indicators are visible,
+- disabled/loading states do not create misleading interactions.
+
+Do not add an accessibility library unless a real need is discovered.
+
+---
+
+# 5. Labels, roles, and state announcements
+
+Verify:
+
+- both currency inputs have programmatically associated labels,
+- inline validation messages are associated clearly with the correct field,
+- month expand/collapse exposes state through `aria-expanded`,
+- account selection uses appropriate radio semantics,
+- loading UI has accessible status/announcement behavior,
+- status badges always contain visible text,
+- color is never the only status distinction.
+
+Avoid unnecessary ARIA when native semantic HTML already provides the behavior.
+
+---
+
+# 6. Monetary consistency
+
+Review every displayed monetary value.
+
+Use the shared formatting utility consistently.
+
+Verify:
+
+- dollar sign present,
+- cents formatting consistent,
+- negative/positive signs consistent,
+- payment/cushion copy uses the same formatting behavior,
+- transaction amounts follow the normalized Affordly sign convention.
+
+Do not introduce financial abbreviations that reduce clarity.
+
+---
+
+# 7. Product-language final review
+
+Review every visible user-facing string.
+
+Affordly must remain retrospective and descriptive.
+
+Do not state or imply:
+
+- the user can afford the payment,
+- the user cannot afford the payment,
+- the payment is safe or unsafe,
+- a result is good or bad,
+- the user should accept or reject financing,
+- the historical result predicts what will happen.
+
+Allowed and required language includes statements such as:
+
+- historical analysis,
+- retrospective simulation,
+- does not predict future performance,
+- Demo data,
+- Plaid Sandbox,
+- test data.
+
+Ensure the product clearly distinguishes:
+
+**Plaid Sandbox test data**
+
+from real/live financial data.
+
+---
+
+# 8. Review every important application state
+
+Verify implementation and tests cover the main states coherently:
+
+### Demo
+- six-month analysis visible immediately.
+
+### Plaid idle
+- connection action available.
+
+### Plaid Link loading
+- clear progress/state.
+
+### User cancels Link
+- no error.
+
+### Plaid connection error
+- safe nontechnical copy,
+- Demo recovery available.
+
+### History preparing
+- clearly explains that Sandbox history is still being prepared,
+- retry means a fresh Plaid attempt,
+- does not imply continued polling of a persisted Item.
+
+### Insufficient history
+- separate from `history_preparing`,
+- clearly states that at least three complete months are required,
+- Demo recovery available.
+
+### Multiple checking accounts
+- inline selector,
+- account name + mask only,
+- accessible selection.
+
+### Plaid ready
+- clearly labeled `Plaid Sandbox` / test data.
+
+Do not add new product states.
+
+---
+
+# 9. Add or strengthen only high-value tests
+
+Do not chase coverage percentage.
+
+Add tests only if this review exposes an important untested behavior.
+
+Potentially high-value gaps include:
+
+- zero cushion UI behavior,
+- multiple-account selector semantics,
+- history-preparing recovery,
+- insufficient-history copy/state,
+- Demo restoration preserving payment/cushion,
+- status count wording,
+- accessible labels/expanded state.
+
+If these are already sufficiently covered, do not manufacture additional tests.
+
+---
+
+# 10. Write the final README draft
+
+Replace any remaining default Next.js README content.
+
+The README should be concise, reviewer-oriented, and assessment-ready.
+
+Use a clear structure.
+
+## Affordly
+
+Explain in one short opening section:
+
+- what it is,
+- who it is for,
+- the specific question it helps explore.
+
+The product concept should be clear:
+
+> How would this recurring monthly payment have fit into the financial months I just lived through?
+
+Do not frame it as an affordability decision engine.
+
+---
+
+## Why this problem
+
+Briefly explain the user problem:
+
+People evaluating a recurring commitment such as vehicle financing often see a monthly payment in isolation.
+
+Affordly helps them contextualize that payment against the variability of their recent checking-account cash flow.
+
+Keep this short.
+
+---
+
+## How it works
+
+Explain:
+
+1. take recent complete historical months,
+2. calculate monthly checking-account cash flow,
+3. subtract the proposed monthly payment from each month,
+4. compare the simulated result with the user's own cushion target,
+5. show the retrospective result month by month.
+
+Document the three descriptive statuses:
+
+- Negative
+- Below Cushion
+- Above Cushion
+
+Explain that these are historical simulation states, not approval/recommendation labels.
+
+---
+
+## Demo Mode
+
+Explain:
+
+- loads immediately,
+- contains deterministic sample checking data,
+- always provides six complete historical months,
+- demonstrates all three statuses.
+
+Mention the default example:
+
+- $475 monthly payment,
+- $300 monthly cushion.
+
+Do not over-document the authored persona.
+
+---
+
+## Plaid Sandbox
+
+Explain truthfully:
+
+- integration uses the real Plaid API,
+- Sandbox provides simulated/test financial data,
+- it does not connect the reviewer to production banking,
+- only eligible checking-account activity is analyzed,
+- posted transactions only,
+- Plaid access token is not persisted in this MVP.
+
+Mention that real Sandbox integration was verified during development.
+
+Do not include:
+- test usernames/passwords unless genuinely useful and appropriate,
+- secrets,
+- access tokens,
+- raw account/transaction payloads.
+
+If Sandbox login instructions are helpful to the reviewer, use only Plaid's standard public Sandbox guidance and no private values.
+
+---
+
+## Cash-flow model
+
+State the important product choice explicitly:
+
+Affordly models **cash movement through the selected checking account**.
+
+Therefore:
+
+- all posted movements through that account count,
+- checking → savings counts as outflow,
+- savings → checking counts as inflow,
+- credit-card payment from checking counts as outflow,
+- underlying credit-card transaction histories are not separately aggregated.
+
+This is deliberate.
+
+Do not describe it as whole-household net worth or complete financial health.
+
+---
+
+## Historical coverage
+
+Explain:
+
+- current partial month is excluded,
+- target is the six most recent complete months,
+- 3–5 supported complete months may still run,
+- fewer than three is insufficient history,
+- zero-transaction months within a supported coverage window remain valid.
+
+Keep implementation detail moderate; the README should not duplicate `design.md`.
+
+---
+
+## Important limitations
+
+Include the meaningful limitations from the approved product direction:
+
+- retrospective, not predictive,
+- monthly granularity,
+- selected primary checking account only,
+- transfers can materially influence apparent cash flow,
+- one-time inflows can make a month look stronger,
+- historical results do not guarantee future behavior,
+- assumes the hypothetical recurring payment is added while other historical behavior stays unchanged,
+- consumer exploration only,
+- not financial advice,
+- not a lending/underwriting decision.
+
+Do not bury these in fine print.
+
+---
+
+## Technology
+
+Document the actual stack now used:
+
+- Next.js
+- TypeScript
+- App Router
+- Tailwind CSS
+- pnpm
+- Plaid Node SDK
+- react-plaid-link
+- Vitest
+- React Testing Library
+- Vercel
+
+Mention that Recharts was deliberately excluded because the approved experience is a month-by-month narrative rather than a chart/dashboard.
+
+---
+
+# 11. Document the Nymbus Joy / FIAT situation accurately
+
+The assessment specifically requires using the Nymbus Joy Design System as guidance.
+
+Document what actually happened.
+
+Explain:
+
+- official Nymbus FIAT installation documentation was reviewed,
+- `@nymbus/fiat` and `@nymbus/fiat-tokens` were identified,
+- `ClientThemeProvider` and Tailwind/token integration were documented,
+- direct package access remained blocked by Nymbus VPN/Nexus permissions during implementation,
+- the UI therefore uses a small provisional presentation layer designed for contained FIAT replacement,
+- no unverified FIAT API/token names were fabricated.
+
+Do not portray the provisional UI as official FIAT styling.
+
+If FIAT access becomes available before submission, Task 11 remains a separate conditional enhancement.
+
+Do not perform Task 11 in this checkpoint unless I explicitly instruct you to.
+
+---
+
+# 12. Document the spec-driven / AI workflow
+
+Add a concise development-process section.
+
+State that:
+
+- Kiro was the primary AI development environment,
+- the project followed a requirements-first/spec-driven workflow,
+- product direction, requirements, technical design, and implementation tasks were reviewed before implementation,
+- implementation proceeded checkpoint by checkpoint,
+- prompts/collaboration history were automatically captured through the Kiro hook.
+
+Point reviewers to:
+
+- `.kiro/specs/affordly-financial-backtest/requirements.md`
+- `.kiro/specs/affordly-financial-backtest/design.md`
+- `.kiro/specs/affordly-financial-backtest/tasks.md`
+- `docs/ai-collaboration/prompts.md`
+
+Do not turn the README into a transcript.
+
+Keep the collaboration-history file as the detailed evidence.
+
+---
+
+# 13. Local setup
+
+Document prerequisites accurately:
+
+- Node requirement appropriate to current project/FIAT readiness,
+- pnpm requirement,
+- Plaid Sandbox credentials for the Plaid path.
+
+Provide the minimum commands:
+
+`pnpm install`
+`pnpm dev`
+
+Testing:
+
+`pnpm test`
+`pnpm type-check`
+`pnpm lint`
+`pnpm build`
+
+Document environment variables using placeholders only:
+
+```text
+PLAID_CLIENT_ID=
+PLAID_SECRET=
+PLAID_ENV=sandbox
+```
+
+Make clear that Demo Mode works without Plaid credentials.
+
+Plaid Sandbox connection requires local Sandbox credentials.
+
+Never tell the reviewer to commit `.env.local`.
+
+---
+
+# 14. Live demo section
+
+Prepare a Live Demo section but do not invent or guess the URL.
+
+If the final Vercel URL is not yet confirmed, use a clearly temporary marker in the uncommitted README or omit the URL value until deployment.
+
+Do not commit a fake URL.
+
+The final URL will be added after deployment is verified.
+
+---
+
+# 15. Product and technical decisions
+
+Include a compact section with the decisions most useful to the evaluator.
+
+Good examples:
+
+- retrospective backtest instead of affordability verdict,
+- primary checking cash-flow model,
+- one shared engine for Demo/Plaid,
+- explicit historical-coverage metadata,
+- `/transactions/sync`,
+- no persistence/auth/webhooks for the scoped MVP,
+- mobile-primary sequential narrative,
+- FIAT-ready presentation boundary.
+
+Do not restate all 96 requirements.
+
+---
+
+# 16. What I would do with more time
+
+Keep this credible and prioritized.
+
+Examples:
+
+- complete FIAT component/token integration once registry access is available,
+- persistent secure Plaid Item/access-token storage,
+- webhook-driven transaction readiness,
+- more extensive integration/e2e testing,
+- broader historical windows or scenario comparison only after validating the core product.
+
+Do not list unrelated feature ideas merely to sound ambitious.
+
+---
+
+# 17. Repository and secret safety review
+
+Before reporting this stage complete:
+
+Verify:
+
+- `.env.local` ignored,
+- `.env.example` placeholders only,
+- no Plaid credential values tracked,
+- no access tokens tracked,
+- no temporary Sandbox scripts,
+- no custom-user payload/config left behind,
+- no Nexus credentials,
+- no build artifacts unintentionally tracked.
+
+Search safely for credential variable names and suspicious committed values without printing secrets into the report.
+
+---
+
+# 18. Production-build/local-runtime readiness
+
+Run:
+
+`pnpm install`
+`pnpm test`
+`pnpm type-check`
+`pnpm lint`
+`pnpm build`
+
+Then, if practical:
+
+- run the built app locally with `pnpm start`,
+- verify it responds successfully.
+
+Do not claim Vercel deployment has been verified yet.
+
+---
+
+# 19. Task progress
+
+Mark:
+
+- **Task 9 — Complete**
+
+For Task 10:
+
+mark only the subtasks actually completed locally.
+
+Do **not** mark deployment/smoke-test/live-URL subtasks complete yet.
+
+Do not mark Task 10 itself complete.
+
+Do not mark Task 11 started.
+
+---
+
+# 20. Inspect the final pre-deploy diff
+
+Run:
+
+- `git status`
+- `git diff --stat`
+- `git diff`
+
+Review carefully.
+
+Expected changes may include:
+
+- polish/accessibility fixes,
+- focused tests if needed,
+- README,
+- `.env.example` correction if necessary,
+- task progress,
+- collaboration history.
+
+Do not stage, commit, push, or deploy.
+
+---
+
+# Stop condition — Checkpoint E pre-deploy approval gate
+
+Stop after all local/pre-deploy work is complete.
+
+Report:
+
+1. UX/accessibility improvements made.
+2. Any visual/layout changes.
+3. Accessibility findings and fixes.
+4. New tests added, if any.
+5. Final total test count.
+6. README sections completed.
+7. Exact README limitations disclosed.
+8. How Nymbus FIAT access/status is described.
+9. How Kiro/spec-driven collaboration is documented.
+10. Local setup instructions included.
+11. Deployment status — must still say not yet deployed in this stage.
+12. Results of:
+    - `pnpm install`
+    - `pnpm test`
+    - `pnpm type-check`
+    - `pnpm lint`
+    - `pnpm build`
+    - local production start check, if run.
+13. Secret/repository safety findings.
+14. Files changed.
+15. Task 9 status.
+16. Task 10 subtask status.
+17. Any remaining issue before deployment approval.
+18. Any item requiring final reviewer visual/manual confirmation.
+19. Confirmation that:
+    - nothing was committed,
+    - nothing was pushed,
+    - no Vercel deployment was triggered,
+    - Task 11/FIAT integration did not begin.
+20. Final `git status`.
+
+Wait for explicit approval before committing, pushing, or deploying.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T20:25:27Z
+
+Checkpoint E pre-deployment work is approved except for one final copy-polish correction and production-runtime smoke check.
+
+Do not commit, push, or deploy yet.
+
+Do not begin Task 11 / FIAT integration.
+
+## 1. Fix BacktestSummary wording
+
+The current wording:
+
+`3 months of your last 6 would have fallen...`
+
+is awkward.
+
+Change the normal count-based summary to a structure like:
+
+`With a $475.00 monthly payment, 3 of the last 6 analyzed months would have fallen below your $300.00 cushion, including 1 that would have gone negative.`
+
+Use the actual dynamic values.
+
+This structure should work naturally for singular counts too:
+
+`1 of the last 6 analyzed months...`
+
+Therefore, remove `monthWord` if it is no longer needed.
+
+Preserve the separate all-above-cushion variant if it remains clear and grammatically correct.
+
+Do not change the financial counting semantics:
+
+`below cushion` in this aggregate sentence includes:
+- `Below Cushion`
+- `Negative`
+
+The formal status counts remain mutually exclusive.
+
+Update only the affected tests.
+
+---
+
+## 2. Local production-runtime check
+
+After rebuilding, run the production server locally using the built application:
+
+`pnpm start`
+
+Verify:
+
+- the root page responds successfully,
+- Demo Mode loads,
+- no immediate server/runtime error occurs,
+- Plaid API routes remain available as dynamic server routes.
+
+Do not claim full visual/browser verification if this environment cannot render the UI.
+
+---
+
+## 3. Re-run quality checks
+
+Run:
+
+`pnpm test`
+`pnpm type-check`
+`pnpm lint`
+`pnpm build`
+
+All must pass.
+
+---
+
+## 4. Final pre-deploy review
+
+Inspect:
+
+- `git status`
+- `git diff --stat`
+- `git diff`
+
+Confirm the final pre-deploy diff contains only intentional:
+
+- Task 9 polish/accessibility changes,
+- README replacement,
+- affected tests,
+- Task 9 / partial Task 10 progress,
+- collaboration-history updates.
+
+Confirm no:
+- credentials,
+- `.env.local`,
+- access tokens,
+- temporary Sandbox scripts,
+- FIAT packages,
+- unrelated dependency changes
+
+are present.
+
+---
+
+## Report
+
+Report:
+
+1. Final BacktestSummary wording.
+2. Whether `monthWord` was removed.
+3. Updated test count.
+4. Results of:
+   - `pnpm test`
+   - `pnpm type-check`
+   - `pnpm lint`
+   - `pnpm build`
+5. Result of local `pnpm start` smoke check.
+6. Final files changed.
+7. Confirmation README still has no fake live URL.
+8. Confirmation no secrets are tracked.
+9. Confirmation:
+   - nothing was committed,
+   - nothing was pushed,
+   - no deployment was triggered,
+   - Task 11 did not begin.
+10. Final `git status`.
+
+Stop after the report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T20:32:26Z
+
+Checkpoint E pre-deployment work has passed review and is approved.
+
+Proceed with the final deployment and submission-readiness sequence.
+
+Do not begin Task 11 / FIAT integration.
+
+Do not add new product functionality.
+
+Do not redesign the application.
+
+The objective is only to:
+
+1. commit the approved pre-deploy state,
+2. push to `main`,
+3. deploy through the existing Vercel integration,
+4. verify the deployed application,
+5. add the real live URL to README,
+6. mark Task 10 / Checkpoint E complete,
+7. make the final documentation/status commit,
+8. leave the repository submission-ready.
+
+---
+
+# 1. Final pre-commit safety check
+
+Before staging anything:
+
+Run:
+
+- `git status`
+- `git diff --stat`
+- `git diff`
+
+Confirm the intended changes are exactly:
+
+- `README.md`
+- `docs/ai-collaboration/prompts.md`
+- `src/__tests__/components/AffordlyApp.test.tsx`
+- `src/components/AccountSelector.tsx`
+- `src/components/AffordlyApp.tsx`
+- `src/components/BacktestSummary.tsx`
+- `src/components/InputPanel.tsx`
+- `src/components/ui/Button.tsx`
+
+plus any intentional task-progress update needed before the commit.
+
+Confirm there is no:
+
+- `.env.local`
+- Plaid secret
+- Plaid client credential value
+- access token
+- public token
+- Sandbox custom-user payload
+- temporary verification script
+- Nexus credential
+- FIAT package
+- Recharts
+- unrelated generated file
+
+in the diff.
+
+Do not print credential values during verification.
+
+---
+
+# 2. Update Task 9 status
+
+Update `tasks.md` to mark:
+
+**Task 9 — UX Polish and Accessibility Pass**
+
+as complete.
+
+For Task 10, mark only the locally completed subtasks as complete.
+
+Do not mark deployment/smoke-test/finalization items complete until they actually succeed.
+
+Do not mark Task 10 complete yet.
+
+---
+
+# 3. Run final local quality suite
+
+Run:
+
+`pnpm install`
+`pnpm test`
+`pnpm type-check`
+`pnpm lint`
+`pnpm build`
+
+Expected baseline:
+
+- 154/154 tests pass,
+- zero type errors,
+- zero lint errors,
+- production build succeeds.
+
+If anything fails, stop and report rather than pushing a broken state.
+
+---
+
+# 4. Create the pre-deployment commit
+
+Stage only the approved Checkpoint E pre-deployment changes.
+
+Create a commit with a clear message such as:
+
+`docs: prepare Affordly for deployment`
+
+or, if the UX changes are substantial enough to warrant a product-oriented message:
+
+`feat: polish Affordly for submission`
+
+Choose the message that best represents the actual diff.
+
+Do not squash or rewrite the existing spec-driven commit history.
+
+---
+
+# 5. Push to main
+
+Push the pre-deployment commit to:
+
+`main`
+
+on:
+
+`git@github.com:CarlEFerr/affordly.git`
+
+The existing GitHub → Vercel integration should trigger deployment.
+
+Do not make any additional product changes while deployment is in progress unless the deployment itself reveals a defect.
+
+---
+
+# 6. Confirm Vercel environment configuration
+
+Before testing Plaid on the deployed app, confirm the Vercel project contains:
+
+- `PLAID_CLIENT_ID`
+- `PLAID_SECRET`
+- `PLAID_ENV=sandbox`
+
+These must exist in Vercel project environment settings and must not be committed to Git.
+
+Do not print their values.
+
+Ensure the deployment uses Sandbox only.
+
+If the variables are missing, add them through Vercel's secure environment settings.
+
+Do not place them in repository files.
+
+---
+
+# 7. Verify deployment succeeded
+
+Capture the final production deployment URL.
+
+Do not guess the URL.
+
+Confirm the deployment corresponds to the commit just pushed.
+
+Verify:
+
+- production deployment completed successfully,
+- no Vercel build failure,
+- no runtime startup failure.
+
+Report the actual URL only after it is confirmed working.
+
+---
+
+# 8. Smoke-test the deployed Demo experience
+
+Open the deployed URL.
+
+Verify on desktop:
+
+- application loads,
+- Demo Mode appears immediately,
+- default $475 payment / $300 cushion analysis renders,
+- six months appear,
+- expected default status distribution is visible,
+- changing payment updates results,
+- changing cushion updates results,
+- month detail expands/collapses,
+- disclosure is visible,
+- no obvious console/runtime error occurs.
+
+Verify at approximately 375px:
+
+- no horizontal scrolling,
+- inputs are usable,
+- summary wraps correctly,
+- six month cards are reachable,
+- expanded details fit the viewport,
+- buttons/touch targets remain practical.
+
+Record any visual defect rather than silently accepting it.
+
+---
+
+# 9. Smoke-test deployed Plaid Sandbox
+
+On the deployed application:
+
+1. Click **Connect Plaid Sandbox**.
+2. Confirm Plaid Link opens.
+3. Cancel once and verify:
+   - no error message,
+   - Demo Mode remains available.
+4. Reopen Plaid Link.
+5. Complete a Sandbox connection.
+6. Verify:
+   - loading state appears,
+   - mode clearly indicates `Plaid Sandbox`,
+   - test data is truthfully labeled,
+   - account handling works,
+   - either analysis or the expected insufficient-history state appears,
+   - no raw Plaid error is exposed.
+7. Select/use **Use Demo Data**.
+8. Confirm the original Demo experience returns.
+
+Do not require the built-in Sandbox Item to produce six months; that real six-month Plaid path was already verified through the custom Sandbox API test.
+
+The deployed smoke test needs to prove the production deployment can actually execute the Link/API flow.
+
+---
+
+# 10. Check deployed security boundary
+
+Using browser/network inspection where practical, confirm:
+
+- no `PLAID_SECRET` appears client-side,
+- no Plaid `access_token` appears in browser responses,
+- normalized transaction data is the only financial history returned by Affordly after server processing,
+- Plaid remains Sandbox-only.
+
+Do not expose credential values in the report.
+
+---
+
+# 11. Add the real live URL to README
+
+Once the deployment has been verified:
+
+Replace the temporary README live-demo placeholder with the actual confirmed Vercel URL.
+
+Use a direct, reviewer-friendly line such as:
+
+`**Live demo:** <verified deployment URL>`
+
+Do not leave both the placeholder and URL.
+
+Do not invent custom domains.
+
+---
+
+# 12. Complete Task 10
+
+After deployment and smoke testing succeed, update `tasks.md`.
+
+Mark:
+
+- Task 10 local documentation/setup items complete,
+- Vercel deployment complete,
+- deployed smoke test complete,
+- final README/live URL complete,
+- **Task 10 — Complete**.
+
+Checkpoint E should then be complete.
+
+Task 11 must remain clearly:
+
+`CONDITIONAL`
+
+and not started unless FIAT access is actually available and separately approved.
+
+Do not mark Task 11 complete.
+
+---
+
+# 13. README final accuracy check
+
+Before the final commit, re-read README end-to-end.
+
+Verify that it accurately includes:
+
+- what Affordly is,
+- primary user/scenario,
+- how the retrospective backtest works,
+- Demo Mode,
+- Plaid Sandbox,
+- cash-flow model,
+- 3–6 month history behavior,
+- limitations,
+- local setup,
+- test/build commands,
+- real live URL,
+- product decisions,
+- technical decisions,
+- FIAT/Nymbus access status,
+- Kiro/spec-driven workflow,
+- what would be done with more time.
+
+Confirm the README does not imply:
+
+- Affordly gives affordability approval,
+- Sandbox is real banking data,
+- FIAT was fully integrated,
+- Plaid access tokens are persisted,
+- historical results predict future outcomes.
+
+---
+
+# 14. Final assessment artifact check
+
+Verify the repository contains the required Kiro artifacts:
+
+- `.kiro/specs/affordly-financial-backtest/requirements.md`
+- `.kiro/specs/affordly-financial-backtest/design.md`
+- `.kiro/specs/affordly-financial-backtest/tasks.md`
+
+Verify they show the correct approved/completed state.
+
+Confirm:
+
+- requirements were preserved,
+- design includes implementation clarifications,
+- tasks show Tasks 1–10 complete,
+- Task 11 remains conditional.
+
+Verify:
+
+`docs/ai-collaboration/prompts.md`
+
+contains the complete collaboration history through Checkpoint E.
+
+---
+
+# 15. Final quality/security pass
+
+Run one final time:
+
+`pnpm test`
+`pnpm type-check`
+`pnpm lint`
+`pnpm build`
+
+Also verify:
+
+- `package-lock.json` absent,
+- `pnpm-lock.yaml` present,
+- `.env.local` ignored,
+- `.env.example` placeholders only,
+- no credential/token values tracked,
+- no temporary scripts or Sandbox payloads remain,
+- no unexpected untracked files.
+
+---
+
+# 16. Create the final submission commit
+
+Stage:
+
+- README with verified live URL,
+- `tasks.md` completion status,
+- final collaboration-history update,
+- any other intentional deployment-documentation update only.
+
+Create a final commit with a clear message such as:
+
+`docs: finalize Affordly submission`
+
+Push it to:
+
+`main`
+
+Do not amend earlier commits.
+
+---
+
+# 17. Verify repository synchronization
+
+After the final push:
+
+Run:
+
+- `git status`
+- `git log --oneline -10`
+
+Confirm:
+
+- working tree clean,
+- `main` is up to date with `origin/main`,
+- commit history still reflects the spec-driven/checkpoint workflow.
+
+Do not start Task 11.
+
+---
+
+# Final Checkpoint E report
+
+Report:
+
+1. Pre-deployment commit hash and message.
+2. Production Vercel URL.
+3. Vercel deployment result.
+4. Desktop deployed smoke-test result.
+5. 375px deployed smoke-test result.
+6. Plaid Sandbox deployed smoke-test result.
+7. Demo-return flow result.
+8. Deployed security-boundary verification.
+9. Final README live URL status.
+10. Task 9 status.
+11. Task 10 status.
+12. Task 11 status.
+13. Final test count.
+14. Final results of:
+    - `pnpm test`
+    - `pnpm type-check`
+    - `pnpm lint`
+    - `pnpm build`
+15. Final submission commit hash and message.
+16. Confirmation all required Kiro spec artifacts are present.
+17. Confirmation collaboration-history documentation is committed.
+18. Confirmation no secret/token values are committed.
+19. Final remote/branch state.
+20. Final `git status`.
+21. Any remaining known limitation or submission note.
+22. Confirmation that no further implementation work has begun.
+
+Stop after this report.
+
+*End of entry*

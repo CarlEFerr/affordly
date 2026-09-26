@@ -596,6 +596,7 @@ discovered as part of this task.
 ## Task 9 — UX Polish and Accessibility Pass
 
 **Checkpoint:** E (begins)  
+**Status:** ✅ Complete  
 **Dependencies:** Tasks 5, 7  
 **Requirements ref:** §14 (Visual Design, Responsiveness, Accessibility)  
 **Design ref:** §12 (UX and Visual Design), §2.4 (Provisional Policy)
@@ -606,50 +607,50 @@ visual tokens remain in place; do not elaborate them.
 
 ### Subtasks
 
-- [ ] **9.1 Mobile layout review (375px)**
+- [x] **9.1 Mobile layout review (375px)**
   - All content reachable without horizontal scrolling.
   - Touch targets: all interactive elements ≥ 44px height/width (inputs, buttons, card headers).
   - Month card expand area covers the full card header width, not just a small icon.
 
-- [ ] **9.2 Keyboard navigation**
+- [x] **9.2 Keyboard navigation**
   - Tab through all interactive elements in logical order.
   - Expand/collapse month cards with Enter/Space.
   - Activate buttons with Enter/Space.
   - Plaid connect and account selector keyboard operable.
 
-- [ ] **9.3 Focus states**
+- [x] **9.3 Focus states**
   - All interactive elements have a visible focus ring (Req 14.6).
   - Focus ring is distinguishable from the default border/outline.
 
-- [ ] **9.4 Accessible labels and roles**
+- [x] **9.4 Accessible labels and roles**
   - All `CurrencyInput` instances have explicit `<label>` elements (Req 14.5).
   - `StatusBadge` has accessible text content (not just icon).
   - `Spinner` has `aria-label` or `aria-live` announcement.
   - `AccountSelector` uses correct radio semantics or equivalent.
 
-- [ ] **9.5 Monetary display consistency**
+- [x] **9.5 Monetary display consistency**
   - All amounts formatted identically using `formatCurrency`.
   - Dollar signs present on all monetary values (Req 2.9).
 
-- [ ] **9.6 State distinction**
+- [x] **9.6 State distinction**
   - Empty/loading/error/success states are visually distinct (Req 14.10).
   - Status labels (Negative, Below Cushion, Above Cushion) remain text-primary distinction
     even if color is not rendered.
 
-- [ ] **9.7 Desktop adaptation**
+- [x] **9.7 Desktop adaptation**
   - Payment and cushion inputs flow side-by-side at ≥ 768px where appropriate.
   - Max-width container centered with adequate horizontal padding.
   - Month cards remain vertical (sequential — no grid).
 
 ### Acceptance Criteria
 
-- [ ] Keyboard-only user can complete a full analysis, expand a month card, and return to Demo Mode.
-- [ ] All inputs have visible, programmatically associated labels (verified with browser
+- [x] Keyboard-only user can complete a full analysis, expand a month card, and return to Demo Mode.
+- [x] All inputs have visible, programmatically associated labels (verified with browser
   accessibility inspector).
-- [ ] No horizontal scrolling at 375px for any core content.
-- [ ] Status states distinguishable by text label alone (color is additive, not primary).
-- [ ] `pnpm lint` — no ESLint errors (including accessibility rules if configured).
-- [ ] `pnpm build` — no TypeScript errors.
+- [x] No horizontal scrolling at 375px for any core content.
+- [x] Status states distinguishable by text label alone (color is additive, not primary).
+- [x] `pnpm lint` — no ESLint errors (including accessibility rules if configured).
+- [x] `pnpm build` — no TypeScript errors.
 
 ---
 
@@ -664,7 +665,7 @@ repository is clean for submission.
 
 ### Subtasks
 
-- [ ] **10.1 Write `README.md`** (replace the current Next.js default)
+- [x] **10.1 Write `README.md`** (replace the current Next.js default)
   - What Affordly is and why the problem matters.
   - Primary user and the vehicle-financing scenario.
   - How the historical backtest works (monthly cash flow, simulation, status classification).
@@ -680,7 +681,7 @@ repository is clean for submission.
   - What would be done with more time (FIAT integration, more test coverage, production Plaid,
     session persistence, deeper analysis window, anomaly surfacing).
 
-- [ ] **10.2 Run full quality and security checks**
+- [x] **10.2 Run full quality and security checks**
   - `pnpm lint` — no errors.
   - `pnpm type-check` — no TypeScript errors.
   - `pnpm test` — all tests pass.
@@ -690,7 +691,7 @@ repository is clean for submission.
   - Confirm `pnpm-lock.yaml` is committed; `package-lock.json` absent.
   - Confirm `.env.example` has correct placeholder keys only.
 
-- [ ] **10.3 Review complete implementation diff and commit**
+- [x] **10.3 Review complete implementation diff and commit**
   - Review the full `git diff` relative to the last committed state.
   - Confirm only intended application files are staged.
   - Stop for human review before committing (checkpoint human-gate behavior applies).
