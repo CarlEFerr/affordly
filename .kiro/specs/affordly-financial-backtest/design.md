@@ -820,21 +820,37 @@ async fetchTransactionsForSession(accessToken):
   return Array.from(transactionMap.values())
 ```
 
-**Why added/modified/removed all matter:**
+**Pending→posted transition (clarification from Plaid docs, Phase 5 implementation):**
+The pending→posted lifecycle in `/transactions/sync` follows this pattern:
+- The old pending transaction appears in `removed`
+- The new posted transaction appears in `added`
+- These two events may occur on separate pagination pages
 
-- `added`: New transactions (includes pending→posted transitions when they appear as new).
-- `modified`: Changes to existing transactions (e.g., amount corrections, pending→posted
-  status change, merchant name update).
-- `removed`: Transactions removed from the item's history (e.g., declined authorizations that
-  initially appeared as pending).
+The reconciliation map handles this correctly: the `removed` step deletes the pending entry; the `added` step inserts the posted entry. The invariant holds regardless of page boundaries.
 
 Processing only `added` would miss modifications and leave removed/declined items in the
 analysis. The reconciliation map ensures the snapshot matches Plaid's current state.
 
-**Intentional MVP tradeoff:** This bounded retry strategy works for Sandbox because Plaid
-Sandbox processes transaction history quickly. In a production integration, webhooks
-(`HISTORICAL_UPDATE_COMPLETE`) would replace polling. Webhooks are explicitly out of MVP
-scope. This limitation is documented in the product README.
+**Plaid Transactions is asynchronous — readiness is not guaranteed at item creation.** When
+Plaid Link completes and returns a `public_token`, the associated Item may not yet have full
+historical transaction data available. The `/transactions/sync` response's
+`transactions_update_status` field indicates readiness:
+
+- `NOT_READY` — transaction pull has not begun or is still in progress.
+- `INITIAL_UPDATE_COMPLETE` — recent transactions are available; full historical pull is pending.
+- `HISTORICAL_UPDATE_COMPLETE` — both initial and historical pulls are complete.
+
+**Affordly's bounded retry:** Because webhooks are outside this MVP's scope, Affordly
+polls `transactions_update_status` with a bounded retry budget (provisionally 3 attempts ×
+1.5 seconds). If `HISTORICAL_UPDATE_COMPLETE` is not reached within that budget and insufficient
+coverage exists, the `history_preparing` state is returned to the client. The user can
+reconnect to trigger a fresh attempt.
+
+**Production-grade behavior would require:** persistent server-side access-token storage so
+that subsequent `/transactions/sync` calls can be made after a `HISTORICAL_UPDATE_COMPLETE`
+webhook fires, without requiring the user to re-complete Plaid Link. Webhook handling and
+access-token persistence are intentionally outside this assessment MVP and are documented as
+known limitations.
 
 **Full server-side behavior:**
 ```
@@ -1434,9 +1450,14 @@ computation of financial results.
 
 ### Bounded retry over webhooks
 
-Webhooks (the production-correct approach for transaction readiness) are explicitly out of
-scope per the approved requirements. The bounded retry is an intentional Sandbox-MVP tradeoff,
-documented in product limitations.
+Plaid Transactions history is asynchronous — an Item may not have full historical data
+immediately after Plaid Link completes. Affordly uses a bounded polling strategy
+(3 attempts × 1.5s) rather than webhooks because persistent access-token storage and webhook
+infrastructure are intentionally outside this assessment MVP. This is a known production
+limitation: a real product would store the access token server-side and use the
+`HISTORICAL_UPDATE_COMPLETE` webhook to trigger a final sync without requiring the user to
+reconnect. The `history_preparing` state handles the case where the bounded window is
+exhausted before sufficient data arrives.
 
 ### Inline account selection over modal/dialog
 

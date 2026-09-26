@@ -7251,3 +7251,2141 @@ After the push succeeds, report:
 Stop after the Checkpoint C closure report.
 
 *End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T18:48:36Z
+
+Begin **Checkpoint D — Plaid Sandbox**.
+
+Execute only:
+
+- **Task 6 — Plaid Sandbox Server Integration**
+- **Task 7 — Plaid Sandbox Client Flow**
+- **Task 8 — Cross-Mode Validation and Product-Boundary Review**
+
+Do not begin Task 9 or Task 10.
+
+Do not install or integrate FIAT.
+
+Do not commit or push until I explicitly approve Checkpoint D.
+
+This is the highest-risk implementation checkpoint.
+
+The goal is:
+
+> Plaid Sandbox connects through the real Plaid API, produces the same normalized `FinancialHistory` contract as Demo Mode, and feeds the exact same approved financial engine.
+
+Do not create a Plaid-specific analysis path.
+
+---
+
+# Preflight
+
+Before making changes:
+
+Read:
+
+- approved `requirements.md`
+- approved `design.md`
+- approved `tasks.md`
+- current `FinancialHistory` / analysis types
+- current Demo adapter
+- current `AffordlyApp`
+- installed `plaid@47.0.0` type definitions
+- installed `react-plaid-link@5.0.0` type definitions
+
+Run:
+
+- `git status`
+- `pnpm test`
+- `pnpm type-check`
+- `pnpm lint`
+- `pnpm build`
+
+Confirm:
+
+- working tree clean,
+- 118 tests pass,
+- Checkpoint C remains green.
+
+Do not rely exclusively on the pseudocode in `design.md`.
+
+Inspect the **actual installed SDK types and signatures first**.
+
+If the installed SDK materially contradicts the approved architecture, stop and report the discrepancy before proceeding.
+
+Minor naming/type differences may be adapted without reopening the design, but report them.
+
+---
+
+# Documentation clarification — pending → posted lifecycle
+
+Current Plaid Transactions documentation represents a typical pending→posted transition during `/transactions/sync` as:
+
+- pending transaction appears in `removed`
+- new posted transaction appears in `added`
+- the posted transaction may reference the old transaction through `pending_transaction_id`
+
+The removed and added records may occur on different pages of the same overall update.
+
+Therefore:
+
+- keep generic support for `added`, `modified`, and `removed`,
+- do not assume pending→posted specifically occurs through `modified`,
+- update the relevant `design.md` / `tasks.md` test wording minimally so it reflects the current documented behavior.
+
+The required invariant is:
+
+> after complete reconciliation, the final normalized snapshot contains only the current posted transaction once and does not double-count the old pending transaction.
+
+Do not change approved product behavior.
+
+---
+
+# 1. Establish the API boundary types
+
+Keep server/API contracts separate from the pure analysis module.
+
+Introduce an appropriate API boundary module for concepts such as:
+
+- `AffordlyErrorCode`
+- `ApiErrorResponse`
+- Plaid connection response types
+- checking-account response shape
+
+Do not move Plaid SDK types into `src/lib/analysis/`.
+
+The pure financial engine must remain untouched by Plaid-specific contracts.
+
+---
+
+# 2. Plaid server configuration
+
+Create the smallest server-only Plaid configuration necessary.
+
+Use:
+
+- installed `plaid@47.0.0`
+- Sandbox environment only
+- server-side environment variables only
+
+Required variables:
+
+- `PLAID_CLIENT_ID`
+- `PLAID_SECRET`
+- `PLAID_ENV=sandbox`
+
+Do not expose either credential to client modules.
+
+Do not create `NEXT_PUBLIC_` versions.
+
+For this assessment, enforce Sandbox-only behavior.
+
+If `PLAID_ENV` is not `sandbox`, fail safely rather than accidentally connecting Affordly to Production.
+
+Never log:
+
+- Plaid secret
+- access token
+- public token
+
+Raw Plaid error details may be logged server-side only if they contain no credentials/tokens.
+
+---
+
+# 3. Implement POST /api/plaid/link-token
+
+Implement the approved route.
+
+Request body:
+
+```ts
+{ sessionId: string }
+```
+
+The client-generated `sessionId` must be validated server-side as an actual UUID-shaped, bounded non-PII identifier rather than merely checking for a non-empty arbitrary string.
+
+Use it as:
+
+```ts
+user.client_user_id
+```
+
+Create the Link token with:
+
+- client name: Affordly
+- Transactions product
+- US country
+- English
+- `transactions.days_requested: 210`
+
+Do not add webhooks.
+
+Webhooks remain explicitly out of MVP scope.
+
+Return only the Link token required by the browser.
+
+Use the unified safe API error contract.
+
+---
+
+# 4. Implement session-scoped client identity
+
+On the browser side:
+
+1. Look for the Affordly Plaid session UUID in `sessionStorage`.
+2. If absent:
+   - generate with `crypto.randomUUID()`
+   - store it in `sessionStorage`
+3. Reuse it for subsequent Plaid Link attempts in that tab/session.
+4. Send it to `/api/plaid/link-token`.
+
+Do not use:
+- email,
+- name,
+- account information,
+- persistent localStorage,
+- authentication,
+- database identity.
+
+The identifier must have no financial meaning.
+
+---
+
+# 5. Implement complete `/transactions/sync` reconciliation
+
+Implement the sync logic against the actual Plaid Node SDK.
+
+For a fresh Affordly connection, begin from the initial empty/no cursor state.
+
+Use:
+
+`count: 500`
+
+where supported by the installed SDK to minimize pagination.
+
+Reconstruct a complete transaction snapshot using:
+
+```text
+Map<transaction_id, transaction>
+```
+
+Across every page:
+
+### added
+Insert or replace:
+
+```text
+map.set(transaction_id, transaction)
+```
+
+### modified
+Replace/update:
+
+```text
+map.set(transaction_id, transaction)
+```
+
+### removed
+Delete:
+
+```text
+map.delete(transaction_id)
+```
+
+Do not normalize transactions page-by-page.
+
+First obtain and reconcile the complete update sequence.
+
+Then normalize the final snapshot.
+
+Continue until:
+
+`has_more === false`
+
+No silent pagination truncation is allowed.
+
+---
+
+# 6. Handle sync mutation during pagination correctly
+
+Explicitly handle:
+
+`TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION`
+
+When it occurs:
+
+1. Discard the incomplete reconciliation map from that pagination attempt.
+2. Restart the **entire pagination loop** from the original cursor used to begin the sequence.
+3. For Affordly's initial full snapshot, that original cursor is the initial empty/no-cursor state.
+4. Rebuild the map from scratch.
+5. Do not retry only the failed page.
+
+Bound repeated full-loop restarts.
+
+Do not allow an infinite retry loop.
+
+If bounded restart attempts fail repeatedly:
+
+- surface the existing safe `connection_failed` behavior,
+- do not expose the raw Plaid code to the browser.
+
+Add a focused test around restart behavior.
+
+Prefer extracting the pagination/reconciliation logic into a small testable server helper rather than burying everything directly in the route handler, if this improves clarity.
+
+Do not over-engineer it into a framework.
+
+---
+
+# 7. Transaction readiness
+
+Use the actual:
+
+`transactions_update_status`
+
+field exposed by the installed SDK.
+
+Recognize the current Plaid readiness states, including:
+
+- `NOT_READY`
+- `INITIAL_UPDATE_COMPLETE`
+- `HISTORICAL_UPDATE_COMPLETE`
+- unknown status defensively
+
+The exact enum names should come from the installed SDK where practical.
+
+Important behavior:
+
+An initial `/transactions/sync` request may legitimately return:
+
+- no transactions,
+- an empty cursor,
+- history still preparing.
+
+Do not treat an empty initial response by itself as a permanent connection failure.
+
+---
+
+# 8. Bounded readiness strategy
+
+Retain the approved bounded retry concept.
+
+The exact retry timing remains provisional.
+
+Begin with the designed values if they work reasonably:
+
+- approximately 3 retries
+- approximately 1.5 seconds between attempts
+
+But actual Sandbox behavior is authoritative.
+
+Do not wait indefinitely.
+
+Each readiness retry should rebuild/re-fetch the current full snapshot from the initial cursor rather than incorrectly applying an unrelated partial cursor state.
+
+Plaid notes that the first historical `/transactions/sync` pull may have substantially higher latency than normal requests, so do not interpret one slower call as a failure without examining the actual response/status.
+
+If the provisional timing must change materially during testing, report it before final approval.
+
+---
+
+# 9. Distinguish readiness from true insufficient history
+
+This distinction is required.
+
+After a sync attempt, derive the Plaid `firstSupportedMonth` conservatively from the **reconciled posted transaction snapshot**:
+
+1. filter to posted transactions,
+2. find the earliest retrieved posted transaction date,
+3. its month is the possibly partial boundary month,
+4. `firstSupportedMonth = following calendar month`.
+
+Then evaluate whether that coverage can provide at least 3 complete supported months through M−1.
+
+## Case A
+
+Historical update NOT complete  
+AND fewer than 3 supported complete months exist
+
+→ continue bounded readiness retry.
+
+If still true after the retry budget:
+
+→ `history_preparing`
+
+## Case B
+
+Historical update NOT complete  
+BUT at least 3 supported complete months already exist
+
+→ proceeding with the available 3–5 month window is allowed.
+
+The UI must show the actual analyzed range.
+
+## Case C
+
+Historical update IS complete  
+BUT fewer than 3 supported complete months exist
+
+→ this is **not** `history_preparing`.
+
+Return the normalized account data.
+
+The financial engine/client then produces the normal:
+
+`insufficient history`
+
+product state.
+
+Do not confuse those conditions.
+
+---
+
+# 10. Handle zero retrieved posted transactions defensively
+
+If the sync snapshot currently contains zero posted transactions:
+
+- while history is not complete → this may be `history_preparing`
+- once historical update is complete → there is not enough evidence to establish supported history
+
+Do not invent `firstSupportedMonth`.
+
+Use `null` when coverage cannot be established.
+
+The analysis engine should then return its typed ineligible state.
+
+---
+
+# 11. Implement checking-account selection server response
+
+Fetch accounts from Plaid and identify eligible accounts using the actual installed SDK types.
+
+Eligible account:
+
+- depository
+- checking
+
+Do not aggregate:
+- savings,
+- credit cards,
+- investments,
+- other account types.
+
+If no eligible checking account exists:
+
+return the application-owned:
+
+`no_checking_account`
+
+error.
+
+For every eligible checking account, return only the normalized data needed by Affordly:
+
+- account id
+- display name
+- mask
+- normalized posted transactions
+- derived `firstSupportedMonth`
+
+Do not return unnecessary Plaid account metadata.
+
+Do not return:
+- access token,
+- routing/account numbers,
+- balances unless required by an approved feature,
+- raw Plaid response objects.
+
+Affordly does not need balances for this product.
+
+---
+
+# 12. Normalize Plaid transactions
+
+Implement the Plaid adapter against the reconciled snapshot.
+
+Use the installed SDK's actual transaction type.
+
+Filter pending transactions using the SDK's actual pending field.
+
+Affordly normalized sign convention:
+
+```text
+positive = cash into checking
+negative = cash out of checking
+```
+
+Plaid Transactions convention:
+
+```text
+positive = debit / money leaving account
+negative = credit / money entering account
+```
+
+Therefore:
+
+```text
+normalizedAmount = -plaidAmount
+```
+
+Description:
+
+```text
+merchant_name ?? name
+```
+
+Use only factual Plaid text.
+
+Do not introduce transaction categorization or explanation.
+
+---
+
+# 13. Test reconciliation thoroughly
+
+Add focused server/adapter tests covering at least:
+
+- Plaid debit sign flip
+- Plaid credit sign flip
+- pending excluded
+- posted included
+- account filtering
+- merchant-name fallback
+- multi-page pagination
+- `added`
+- `modified`
+- `removed`
+- removed pending + added posted produces one final posted cash movement
+- removed and added records may occur on separate pages
+- mutation-during-pagination restarts the whole sequence
+- readiness incomplete + insufficient coverage
+- readiness incomplete + sufficient 3–5 month coverage
+- readiness complete + insufficient coverage
+- no posted transactions
+- no checking accounts
+- safe error response classification
+
+Use mocks for Plaid network behavior where appropriate.
+
+Do not require live Plaid for deterministic unit tests.
+
+---
+
+# 14. Implement PlaidConnector with react-plaid-link 5
+
+Use the installed:
+
+`react-plaid-link@5.0.0`
+
+Use:
+
+`usePlaidLink`
+
+rather than building a custom Link script wrapper.
+
+The installed v5 types define the Link success token as:
+
+```ts
+string | null
+```
+
+Even though this Transactions Item flow should return a public token, handle `null` defensively.
+
+Do not pass a nullable public token to `/api/plaid/connect`.
+
+If it is unexpectedly null:
+
+- surface a safe connection error,
+- do not throw an unhandled client exception.
+
+Use Link's `ready` state appropriately.
+
+Do not attempt to open Link until it is ready.
+
+---
+
+# 15. Link cancellation vs Link errors
+
+Implement `onExit` carefully.
+
+If the user exits/cancels Link without an error:
+
+- return to the normal Demo state,
+- show no error message.
+
+If Link exits with an actual error:
+
+- show a nontechnical connection error,
+- preserve Demo Mode availability.
+
+Do not show raw Plaid error codes to users.
+
+An invalid/expired Link token may require generating a fresh Link token before another attempt.
+
+---
+
+# 16. Implement the Plaid connection state machine
+
+Integrate the approved states into the existing Affordly experience.
+
+Conceptually:
+
+```text
+idle
+→ linking
+→ loading
+→ ready
+
+or
+
+→ selecting-account
+
+or
+
+→ error
+```
+
+Do not show stale Demo results as though they were Plaid results while Plaid data is loading.
+
+Preserve Demo Mode as a first-class recovery path.
+
+---
+
+# 17. Multiple checking accounts
+
+If the Plaid response contains:
+
+### exactly one eligible checking account
+Auto-select it.
+
+### more than one
+Show the approved inline account selector.
+
+Do not use:
+- modal,
+- dialog,
+- bottom sheet.
+
+Show:
+
+- account name
+- masked digits
+
+Use large, accessible radio-style targets.
+
+Do not expose more account information than necessary.
+
+### zero
+Use the `no_checking_account` state.
+
+Offer Demo Mode.
+
+---
+
+# 18. Important retry limitation caused by no persistence
+
+The approved MVP deliberately does not persist Plaid access tokens.
+
+Remember:
+
+- `public_token` is exchanged once,
+- `access_token` exists only inside `/api/plaid/connect`,
+- the access token is discarded after that request.
+
+Therefore, if `/api/plaid/connect` exhausts its bounded readiness attempts and returns:
+
+`history_preparing`
+
+the browser cannot simply call the same `/api/plaid/connect` request again with the same public token.
+
+Do not implement a fake "retry" that attempts to reuse an already-exchanged public token.
+
+For this no-persistence Sandbox MVP, the recovery action should clearly mean:
+
+> start a new Plaid connection attempt
+
+That means:
+
+- request a fresh Link token,
+- reopen Plaid Link,
+- complete a fresh Sandbox connection.
+
+Label it naturally, for example:
+
+`Try Plaid again`
+
+Do not imply that the same server Item is being polled later.
+
+Document this limitation.
+
+Do not introduce token persistence merely to improve retry UX.
+
+---
+
+# 19. Preserve the same analysis path
+
+When a checking account is selected, construct the exact shared:
+
+`FinancialHistory`
+
+shape:
+
+- source = plaid
+- account name
+- normalized transactions
+- `firstSupportedMonth`
+
+Then call the same:
+
+`runBacktest()`
+
+used by Demo Mode.
+
+There must be no:
+
+```text
+if plaid → special analysis
+```
+
+logic in the financial engine.
+
+---
+
+# 20. Preserve user inputs when switching data mode
+
+Unless the approved requirements explicitly state otherwise:
+
+- keep the user's current payment,
+- keep the user's current cushion
+
+when switching from Demo to Plaid.
+
+The question being tested should remain the same while the historical data source changes.
+
+Do not silently reset `$475` / `$300` just because Plaid connected.
+
+---
+
+# 21. Plaid Mode disclosure
+
+Clearly identify connected data as:
+
+**Plaid Sandbox**
+
+not as:
+- live bank data,
+- real bank history,
+- production banking data.
+
+The experience must remain truthful:
+
+Plaid Sandbox provides simulated/test financial data through a real Plaid API integration.
+
+Do not imply the reviewer connected their actual bank account.
+
+---
+
+# 22. Cross-mode validation
+
+Execute Task 8 after Tasks 6 and 7 work.
+
+Verify:
+
+- Demo and Plaid histories use one normalized contract
+- identical normalized data produces identical `BacktestResult`
+- sign conversion correct
+- posted-only behavior correct
+- transfer behavior unchanged:
+  all posted movements through selected checking count
+- credit-card payments from checking count as outflows
+- current partial month excluded
+- `firstSupportedMonth` semantics correct
+- 3 supported months runs
+- 4 supported months runs
+- 5 supported months runs
+- fewer than 3 is ineligible
+- zero cushion works
+- payment boundaries still work
+- actual period label is correct
+- account selection works
+- Plaid errors preserve Demo recovery
+- no predictive/recommendation language introduced
+
+Do not add product scope during validation.
+
+Fix defects discovered within the approved requirements.
+
+---
+
+# 23. Security review
+
+Before reporting Checkpoint D complete, verify:
+
+## Client must never receive
+- `PLAID_SECRET`
+- `access_token`
+
+## Client may legitimately contain/send
+- Link token
+- temporary `public_token` returned by Plaid Link
+- normalized transactions returned by the Affordly server
+
+Do not confuse `public_token` with `access_token`.
+
+Inspect browser/API response shapes and source code.
+
+Search the client bundle/source for accidental references to:
+
+- `PLAID_SECRET`
+- access-token variables/data
+
+Do not print secrets while verifying.
+
+---
+
+# 24. Environment safety
+
+Confirm:
+
+- `.env.local` remains ignored
+- required Plaid variable names exist locally
+- no values are printed in reports
+- no credentials are committed
+- no Nexus credentials introduced
+- Sandbox environment only
+
+Do not modify `.env.example` with real values.
+
+If placeholder variable documentation needs correction, use placeholders only.
+
+---
+
+# 25. Live Sandbox validation
+
+Where the environment permits, validate against the actual Plaid Sandbox.
+
+At minimum attempt to verify:
+
+- link-token route calls real Plaid Sandbox successfully
+- Plaid Link initializes
+- Sandbox Item connection succeeds
+- `/api/plaid/connect` successfully exchanges the public token
+- checking account data returns
+- transaction sync executes
+- a Plaid Sandbox history renders through Affordly
+
+However:
+
+If the environment cannot interact with the browser/Plaid Link UI, **do not claim the end-to-end Link flow passed**.
+
+Report precisely what was verified automatically and what requires manual browser interaction.
+
+Do not replace the real product Link flow with a Sandbox-only shortcut in application code merely to make testing easier.
+
+Temporary developer-side verification must not become production app behavior.
+
+---
+
+# 26. Manual browser verification targets
+
+If browser interaction is available, verify:
+
+### Connect
+- Connect Plaid Sandbox action visible
+- Link opens
+- cancel produces no error
+- successful connection transitions clearly into Plaid Sandbox mode
+
+### Loading
+- clear loading state
+- no stale results presented as Plaid results
+
+### One checking account
+- automatically selected
+- analysis shown
+
+### Multiple checking accounts
+- inline selector
+- keyboard/touch usable
+
+### Errors
+- safe language
+- Demo option visible
+
+### Insufficient history
+- distinct from history-preparing state
+
+### Plaid Sandbox labeling
+- truthful and obvious
+
+### Return to Demo
+- works from every Plaid state
+
+---
+
+# 27. Tests
+
+Add focused tests for Tasks 6–8.
+
+Do not chase an arbitrary coverage percentage.
+
+Prioritize risky behavior:
+
+- reconciliation
+- pagination
+- mutation restart
+- readiness handling
+- normalization
+- source-independent results
+- Link callback states
+- cancel vs error
+- multiple account selection
+- Demo recovery
+- insufficient history
+- session UUID reuse
+
+Keep tests behavior-oriented.
+
+Avoid testing implementation trivia unless it protects financial correctness/security.
+
+---
+
+# 28. Run quality checks
+
+Run:
+
+```text
+pnpm test
+pnpm type-check
+pnpm lint
+pnpm build
+```
+
+All must pass.
+
+Also run any focused Plaid/server tests separately while debugging if useful.
+
+---
+
+# 29. Inspect final Checkpoint D diff
+
+Run:
+
+- `git status`
+- `git diff --stat`
+- `git diff`
+
+Review for:
+
+- accidental secrets
+- access tokens
+- unrelated dependency changes
+- product-scope expansion
+- production-Plaid configuration
+- webhooks
+- token persistence
+- duplicate analysis paths
+- unexpected financial-engine changes
+
+Do not stage/commit yet.
+
+---
+
+# Stop condition — Checkpoint D approval gate
+
+After Tasks 6–8 are complete, stop.
+
+Do not begin Task 9.
+
+Do not begin Task 10.
+
+Do not begin conditional FIAT work.
+
+Report:
+
+1. Actual Plaid Node SDK types/method signatures discovered and any differences from `design.md`.
+2. Files created/modified.
+3. API boundary types created.
+4. Link-token route behavior.
+5. Connect route behavior.
+6. `/transactions/sync` pagination/reconciliation implementation.
+7. Mutation-during-pagination behavior.
+8. Actual readiness states observed/implemented.
+9. Final bounded-retry constants used and whether they changed.
+10. Pending→posted reconciliation behavior.
+11. Plaid normalization/sign behavior.
+12. `firstSupportedMonth` derivation.
+13. No-checking / one-checking / multiple-checking behavior.
+14. Session UUID behavior.
+15. `react-plaid-link@5.0.0` behavior and any React 19 issue found.
+16. `history_preparing` recovery behavior.
+17. Insufficient-history behavior.
+18. Plaid Sandbox labeling/copy.
+19. Cross-mode validation results.
+20. Number of new tests and total passing tests.
+21. Results of:
+    - `pnpm test`
+    - `pnpm type-check`
+    - `pnpm lint`
+    - `pnpm build`
+22. What was verified against the **real Plaid Sandbox API**.
+23. What, if anything, still requires manual browser verification.
+24. Any security concern discovered.
+25. Any deviation from the approved design/requirements.
+26. Confirmation that:
+    - Task 9 did not begin,
+    - Task 10 did not begin,
+    - FIAT work did not begin,
+    - no production Plaid behavior was added,
+    - no webhook was added,
+    - no access-token persistence was added,
+    - nothing was committed,
+    - nothing was pushed.
+27. Final `git status`.
+
+Wait for explicit approval before committing Checkpoint D or proceeding to Checkpoint E.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T19:07:53Z
+
+Checkpoint D implementation is functionally complete, but real Plaid Sandbox verification is still required before approval.
+
+Do not begin Task 9 or Task 10.
+
+Do not commit or push.
+
+Do not add production behavior.
+
+Do not add a Sandbox shortcut to the application itself.
+
+The purpose of this pass is verification only.
+
+# 1. Run a real Sandbox API smoke test without Plaid Link
+
+Use Plaid's official Sandbox-only `/sandbox/public_token/create` capability to create a real Sandbox Item programmatically.
+
+This is for temporary verification only.
+
+Do not add this endpoint or behavior to Affordly application code.
+
+Do not commit any helper script unless there is a compelling reason; prefer an ephemeral/untracked script or one-off Node execution.
+
+Use the existing server-side Sandbox Plaid client and credentials.
+
+Create a Sandbox public token for Transactions using an appropriate Plaid test institution/account.
+
+The official Sandbox default test credentials may be used where applicable.
+
+Do not print:
+- PLAID_SECRET,
+- access tokens,
+- public tokens
+
+to the report.
+
+You may report only whether each operation succeeded.
+
+---
+
+# 2. Exercise the real Affordly connect path
+
+The goal is to validate our implementation, not merely Plaid's SDK directly.
+
+Preferred verification:
+
+1. Create the Sandbox public token programmatically.
+2. Send that token through Affordly's real:
+
+`POST /api/plaid/connect`
+
+route.
+
+3. Verify that the route performs:
+   - public-token exchange,
+   - account retrieval,
+   - eligible checking-account filtering,
+   - `/transactions/sync`,
+   - readiness handling,
+   - reconciliation,
+   - pending filtering,
+   - normalization,
+   - `firstSupportedMonth` derivation.
+
+4. Inspect the safe response shape.
+
+Confirm that the returned response contains:
+- at least one eligible checking account if the chosen test Item provides one,
+- normalized transaction data,
+- account name/mask,
+- `firstSupportedMonth` when history supports it.
+
+Confirm that it does **not** contain:
+- access token,
+- Plaid secret,
+- raw Plaid object dump,
+- unnecessary account details.
+
+If the chosen default Sandbox user does not produce appropriate checking/Transactions data, use another official Sandbox test user or a Sandbox custom user.
+
+Do not alter Affordly's product behavior merely to accommodate test data.
+
+---
+
+# 3. Record actual readiness behavior
+
+During the real Sandbox call, report the actual observed:
+
+`transactions_update_status`
+
+behavior.
+
+Report only the enum/state, not sensitive response details.
+
+Record:
+
+- initial status observed,
+- whether any readiness retry occurred,
+- whether `HISTORICAL_UPDATE_COMPLETE` was reached,
+- whether the current `3 × 1500ms` provisional retry budget was sufficient,
+- approximate number of sync calls needed.
+
+If the existing retry constants fail with ordinary Sandbox behavior, do not silently increase them.
+
+Stop and report the observed behavior and recommend the smallest adjustment.
+
+---
+
+# 4. Verify actual transaction normalization
+
+From the real Sandbox response, verify at least one transaction flows through the adapter correctly.
+
+Do not report account-sensitive details beyond generic test-data examples.
+
+Confirm:
+
+- posted transaction included,
+- pending transaction excluded if one is present,
+- Plaid debit sign becomes Affordly negative cash movement,
+- Plaid credit sign becomes Affordly positive cash movement.
+
+If no pending transaction exists in the chosen Sandbox dataset, simply report that the pending filter remains covered by deterministic tests and was not observable in this smoke test.
+
+---
+
+# 5. Verify actual history coverage behavior
+
+Using the real reconciled posted transaction snapshot:
+
+- identify the earliest posted transaction month internally,
+- confirm that month is treated as the boundary,
+- confirm `firstSupportedMonth` is the following calendar month,
+- confirm `runBacktest()` receives that coverage unchanged.
+
+Report only the resulting supported-month count / eligibility state, not sensitive transaction details.
+
+Examples:
+
+- 6 supported complete months → eligible
+- 3–5 → eligible partial window
+- fewer than 3 → insufficient history
+
+---
+
+# 6. Do not persist test access tokens
+
+This smoke test must preserve the approved architecture.
+
+Do not:
+- save the access token to disk,
+- put it in environment variables,
+- store it in application state,
+- commit it anywhere.
+
+It must exist only for the temporary verification operation.
+
+After the test process/request ends, it should be discarded.
+
+---
+
+# 7. Manual Plaid Link check remains separate
+
+The API smoke test proves the real Plaid API integration, but it does not prove the browser Link UX.
+
+After the server smoke test, report that the following still require manual browser verification:
+
+- "Connect Plaid Sandbox" action opens Link,
+- Link UI renders,
+- cancel returns to Demo without an error,
+- successful Sandbox login completes,
+- Affordly transitions to Plaid Sandbox mode,
+- real normalized results render,
+- "Use Demo Data" returns correctly.
+
+Do not claim these passed unless actually observed in a browser.
+
+---
+
+# 8. Re-run quality checks only if code changed
+
+If no committed/product code changed during this verification, existing quality results may remain valid.
+
+If any implementation defect is discovered and corrected, rerun:
+
+`pnpm test`
+`pnpm type-check`
+`pnpm lint`
+`pnpm build`
+
+Do not make unrelated improvements.
+
+---
+
+# Verification report
+
+Report:
+
+1. Method used to create the real Sandbox Item.
+2. Confirmation that `/sandbox/public_token/create` contacted real Plaid Sandbox successfully.
+3. Confirmation that Affordly's actual `/api/plaid/connect` route processed the real Sandbox public token.
+4. Number of eligible checking accounts returned.
+5. Whether normalized transactions were returned.
+6. Actual `transactions_update_status` state(s) observed.
+7. Whether readiness retries occurred.
+8. Whether the existing retry budget was sufficient.
+9. Supported complete-month count / analysis eligibility.
+10. Confirmation that no access token or secret appeared in the client-safe response.
+11. Any real SDK/API behavior that differed from mocked tests.
+12. Any code defect discovered and fixed.
+13. Quality-check results if code changed.
+14. What still requires manual Plaid Link browser verification.
+15. Confirmation that:
+   - no Sandbox bypass was added to product code,
+   - no access token was persisted,
+   - Task 9 did not begin,
+   - Task 10 did not begin,
+   - nothing was committed,
+   - nothing was pushed.
+
+Stop after the report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T19:13:37Z
+
+Before running the Plaid Sandbox verification, correct the local credential placement.
+
+Do not begin Task 9 or Task 10.
+
+Do not commit or push.
+
+## 1. Secure local Plaid credentials
+
+Real Plaid credentials must not remain in `.env.example`.
+
+Ensure:
+
+### `.env.local`
+
+Contains the actual local Sandbox values:
+
+```text
+PLAID_CLIENT_ID=<local sandbox client id>
+PLAID_SECRET=<local sandbox secret>
+PLAID_ENV=sandbox
+```
+
+Do not print or report the actual values.
+
+### `.env.example`
+
+Restore to placeholders only:
+
+```text
+PLAID_CLIENT_ID=
+PLAID_SECRET=
+PLAID_ENV=sandbox
+```
+
+Do not place real values in `.env.example`.
+
+Confirm `.env.local` is ignored by Git.
+
+Use a Git status/safety check that does not echo credential contents.
+
+If the credentials have already been committed or pushed, stop and report that fact without printing the values. Do not continue until the secret can be rotated.
+
+If they have only existed locally in the current uncommitted `.env.example`, restore the placeholders and continue.
+
+---
+
+## 2. Run the real Plaid Sandbox smoke test
+
+Once the local environment is secure, perform the previously approved verification.
+
+Use the installed Plaid SDK's Sandbox-only `sandboxPublicTokenCreate` capability to create a real Sandbox Transactions Item programmatically.
+
+This is temporary verification only.
+
+Do not add a Sandbox bypass to Affordly product code.
+
+Do not persist:
+- public token,
+- access token,
+- Plaid secret.
+
+Do not print them.
+
+Then send the generated public token through Affordly's actual:
+
+`POST /api/plaid/connect`
+
+route.
+
+The purpose is to prove the production-shaped Affordly route works against the real Plaid Sandbox service.
+
+---
+
+## 3. Verify the actual route behavior
+
+Confirm the real route successfully performs:
+
+- public-token exchange,
+- account retrieval,
+- checking-account filtering,
+- `/transactions/sync`,
+- complete cursor pagination,
+- `added` / `modified` / `removed` reconciliation,
+- readiness handling,
+- posted-only filtering,
+- amount-sign normalization,
+- `firstSupportedMonth` derivation.
+
+Inspect only safe response metadata.
+
+Report:
+
+- number of eligible checking accounts,
+- whether normalized transactions were returned,
+- supported complete-month count,
+- resulting analysis eligibility.
+
+Do not include raw full transaction/account payloads unless needed to diagnose an error.
+
+---
+
+## 4. Observe real readiness behavior
+
+Record the actual `transactions_update_status` values seen during the Sandbox operation.
+
+Report:
+
+- initial status,
+- subsequent status if it changed,
+- number of sync attempts,
+- whether readiness retries occurred,
+- whether `HISTORICAL_UPDATE_COMPLETE` was reached,
+- whether the current `3 × 1500ms` retry budget was sufficient.
+
+If ordinary Sandbox behavior exceeds the approved retry budget, do not silently change the constants.
+
+Report the observed behavior first.
+
+---
+
+## 5. Verify real normalized transaction behavior
+
+Using the real Sandbox data, verify internally that:
+
+- a posted debit becomes a negative Affordly cash movement,
+- a credit becomes a positive Affordly cash movement,
+- pending transactions are excluded if the dataset contains any.
+
+Do not report sensitive account details.
+
+Generic test-data descriptions are sufficient.
+
+If the Sandbox dataset contains no pending transaction, say so and rely on the deterministic pending-filter tests already present.
+
+---
+
+## 6. Verify coverage metadata
+
+Confirm:
+
+- earliest retrieved posted transaction month is treated as the boundary month,
+- `firstSupportedMonth` is the following calendar month,
+- the same normalized `FinancialHistory` goes into `runBacktest()`,
+- there is no Plaid-specific financial calculation path.
+
+Report the number of supported complete months and whether the result is:
+
+- eligible six-month analysis,
+- eligible 3–5 month partial analysis,
+- insufficient history.
+
+---
+
+## 7. Security verification
+
+Confirm the client-safe response contains no:
+
+- `access_token`,
+- `PLAID_SECRET`,
+- raw credential data.
+
+Confirm `.env.local` remains untracked.
+
+Confirm `.env.example` contains placeholders only.
+
+Do not expose values in the report.
+
+---
+
+## 8. Do not change product code unless a real defect appears
+
+If the smoke test passes, make no implementation changes.
+
+If the real API reveals an implementation defect:
+
+- fix only that defect,
+- document the discrepancy,
+- rerun:
+  - `pnpm test`
+  - `pnpm type-check`
+  - `pnpm lint`
+  - `pnpm build`
+
+Do not broaden scope.
+
+---
+
+## Verification report
+
+Report:
+
+1. Confirmation `.env.example` was restored to placeholders.
+2. Confirmation `.env.local` contains the local credentials and remains ignored, without showing values.
+3. Whether real `/sandbox/public_token/create` succeeded.
+4. Whether the actual Affordly `/api/plaid/connect` route processed that real public token successfully.
+5. Number of eligible checking accounts returned.
+6. Whether normalized transactions were returned.
+7. Actual readiness status/state sequence observed.
+8. Number of sync/readiness attempts.
+9. Whether the current retry budget was sufficient.
+10. Supported complete-month count and analysis eligibility.
+11. Real debit/credit normalization verification.
+12. Pending-filter observation, if available.
+13. Confirmation no secret/access token appeared in the safe response.
+14. Any real API behavior that differed from our mocks/design.
+15. Any code fix required.
+16. Quality checks if code changed.
+17. What still requires manual Plaid Link browser verification.
+18. Confirmation that:
+    - no Sandbox bypass was added to product code,
+    - no token was persisted,
+    - Task 9 did not begin,
+    - Task 10 did not begin,
+    - nothing was committed,
+    - nothing was pushed.
+
+Stop after the report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T19:21:12Z
+
+Before Checkpoint D approval, rerun the real Plaid Sandbox smoke test with the Sandbox endpoint configured to request the same history window as Affordly.
+
+Do not begin Task 9 or Task 10.
+
+Do not commit or push.
+
+Do not change product code unless this verification exposes an actual defect.
+
+## Correction to the previous conclusion
+
+The previous report stated that `/sandbox/public_token/create` does not honor `days_requested`.
+
+That conclusion is incorrect.
+
+Plaid's Sandbox API supports a Transactions option equivalent to the Link configuration:
+
+`options.transactions.days_requested`
+
+with a valid range of 1–730 days.
+
+The previous test therefore demonstrated the default/shallow Sandbox Item behavior, not that the Sandbox bypass is incapable of requesting Affordly's 210-day history.
+
+Update the eventual verification notes accordingly.
+
+---
+
+## 1. Create a new Sandbox Item with 210-day history
+
+Create a completely new Sandbox Item.
+
+Do not reuse the previous Item because Transactions history length cannot be expanded after the product has already been initialized for an Item.
+
+Use `/sandbox/public_token/create` through the installed SDK and explicitly provide:
+
+- institution: First Platypus Bank (`ins_109508`) or another suitable non-OAuth Sandbox institution,
+- initial product: Transactions,
+- `options.transactions.days_requested: 210`.
+
+Inspect the installed `plaid@47.0.0` request type and use its actual property names rather than guessing.
+
+Do not print the public token.
+
+---
+
+## 2. Prefer a Sandbox Transactions test user with meaningful history
+
+If the standard `user_good` dataset still does not expose enough historical transaction data for this test, use Plaid's documented Transactions test user:
+
+`user_transactions_dynamic`
+
+with a valid non-empty Sandbox password.
+
+Plaid documents this test user's checking/credit-card data as providing approximately six months of recurring Transactions history.
+
+Affordly must still analyze only eligible checking accounts.
+
+Do not modify product code to accommodate this user.
+
+---
+
+## 3. Send the resulting token through Affordly
+
+Pass the newly created real Sandbox public token through Affordly's existing:
+
+`POST /api/plaid/connect`
+
+route.
+
+Verify the exact production-shaped path again:
+
+- public-token exchange,
+- checking-account filtering,
+- `/transactions/sync`,
+- complete pagination,
+- reconciliation,
+- posted filtering,
+- sign normalization,
+- `firstSupportedMonth`,
+- shared `runBacktest()` eligibility.
+
+Do not bypass the Affordly server implementation after token creation.
+
+---
+
+## 4. Verify requested history actually improved
+
+Report:
+
+- number of eligible checking accounts,
+- number of normalized posted transactions,
+- earliest posted transaction month,
+- derived `firstSupportedMonth`,
+- number of supported complete months,
+- resulting eligibility:
+  - 6 months,
+  - 3–5 month partial,
+  - or insufficient.
+
+Do not print full account histories.
+
+The goal is to prove whether a 210-day Sandbox Item produces enough supported historical coverage for Affordly's intended Plaid analysis.
+
+---
+
+## 5. Readiness behavior
+
+Again record:
+
+- initial `transactions_update_status`,
+- number of sync calls,
+- whether readiness retries occurred,
+- whether `HISTORICAL_UPDATE_COMPLETE` was reached,
+- whether the current retry budget was sufficient.
+
+Do not alter the retry constants unless the real test demonstrates a problem.
+
+---
+
+## 6. Security
+
+Confirm again:
+
+- `.env.local` remains ignored,
+- `.env.example` remains placeholders only,
+- no access token appears in the safe response,
+- no credentials/tokens are persisted,
+- no token values are printed in the report.
+
+---
+
+## 7. Update the verification conclusion
+
+The final report must distinguish:
+
+### First smoke test
+Sandbox Item created without explicit 210-day Sandbox history configuration, resulting in shallow/current history.
+
+### Corrected smoke test
+Sandbox Item explicitly created with the Sandbox Transactions `days_requested: 210` option.
+
+Do not state that only interactive Plaid Link supports `days_requested`.
+
+---
+
+## Report
+
+After the corrected test, report:
+
+1. Actual SDK request shape used for Sandbox `days_requested`.
+2. Sandbox test username used.
+3. Whether `/sandbox/public_token/create` succeeded.
+4. Whether Affordly `/api/plaid/connect` succeeded.
+5. Eligible checking-account count.
+6. Normalized posted-transaction count.
+7. Earliest posted month.
+8. Derived `firstSupportedMonth`.
+9. Supported complete-month count.
+10. Analysis eligibility/result window.
+11. Readiness status sequence and sync attempt count.
+12. Whether retry constants were sufficient.
+13. Whether any real API behavior contradicted the implementation.
+14. Whether any code change was required.
+15. Confirmation that:
+   - no Sandbox shortcut was added to product code,
+   - no token was persisted,
+   - Task 9 did not begin,
+   - Task 10 did not begin,
+   - nothing was committed,
+   - nothing was pushed.
+
+Stop after the report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T19:32:18Z
+
+Run one final real Plaid Sandbox API verification using a temporary custom Sandbox user with intentionally historical checking-account transactions.
+
+Do not begin Task 9 or Task 10.
+
+Do not commit or push.
+
+Do not add any Sandbox shortcut or custom-user behavior to Affordly product code.
+
+This is temporary verification only.
+
+## Purpose
+
+The previous real Sandbox tests successfully proved:
+
+- real public-token exchange,
+- account retrieval,
+- `/transactions/sync`,
+- reconciliation,
+- normalization,
+- security boundary,
+- insufficient-history handling.
+
+However, the built-in datasets used in those runs did not exercise Affordly's real **eligible 3–6 month Plaid analysis path**.
+
+Use Plaid Sandbox custom-user data to verify that path against the real API.
+
+---
+
+## 1. Create a temporary custom Sandbox user
+
+Use `/sandbox/public_token/create` with:
+
+- a non-OAuth Sandbox institution such as First Platypus Bank,
+- Transactions as the initial product,
+- `options.transactions.days_requested: 210`,
+- `override_username: "user_custom"`,
+- `override_password` containing a JSON-stringified custom-user configuration.
+
+Inspect the installed SDK types and Plaid's documented custom-user schema.
+
+Do not guess field names.
+
+The custom user should contain:
+
+- one `depository` / `checking` account,
+- enough posted transactions to establish historical coverage beyond M−6,
+- transactions distributed across the relevant historical months,
+- both inflows and outflows.
+
+Generate the transaction dates programmatically relative to the current date so the test remains valid over time.
+
+Ensure the earliest posted transaction falls in a boundary month **older than M−6**.
+
+For example, if today is September 2026:
+
+- include at least one posted transaction in February 2026 or earlier,
+- include transactions during March through August 2026.
+
+This should allow the conservative boundary rule to produce all six supported complete months M−6 through M−1.
+
+Do not reuse Affordly's Demo adapter or Demo dataset.
+
+This must be genuine Plaid Sandbox data flowing through the real Plaid API.
+
+---
+
+## 2. Use factual synthetic checking movements
+
+The custom checking account may contain simple synthetic transaction descriptions such as:
+
+- Payroll
+- Rent
+- Utilities
+- Insurance
+- Transfer
+- Grocery
+
+The specific financial values do not matter as long as:
+
+- Plaid returns them successfully,
+- the account contains inflows and outflows,
+- the date coverage establishes six complete supported months.
+
+Remember Plaid's amount sign convention when constructing the data.
+
+Do not tailor the dataset merely to reproduce the Demo Mode result distribution.
+
+The goal is source/integration verification, not duplication of Demo data.
+
+---
+
+## 3. Pass the public token through Affordly's real route
+
+Send the real custom-user public token through:
+
+`POST /api/plaid/connect`
+
+Do not call the adapter or engine directly in place of the route.
+
+Verify the route performs its full real pipeline:
+
+- public-token exchange,
+- account retrieval,
+- checking filter,
+- Transactions sync,
+- cursor handling,
+- reconciliation,
+- posted-only filtering,
+- sign normalization,
+- `firstSupportedMonth` derivation,
+- safe response shaping.
+
+---
+
+## 4. Prove six-month Plaid eligibility
+
+Using the response from the real Affordly route, construct the same `FinancialHistory` that the client uses and run the shared analysis engine.
+
+Verify:
+
+- `source = 'plaid'`
+- transactions are normalized,
+- `firstSupportedMonth` is derived from the Plaid data,
+- exactly six supported complete months are selected,
+- M (current partial month) remains excluded,
+- M−1 through M−6 are returned most-recent-first,
+- `runBacktest()` returns an eligible `BacktestResult`.
+
+The exact status distribution does not need to match Demo Mode.
+
+Report:
+
+- earliest posted transaction month,
+- derived `firstSupportedMonth`,
+- analyzed month count,
+- analyzed period,
+- whether the result is eligible.
+
+Do not report the full transaction dataset.
+
+---
+
+## 5. Optional second custom test — multiple checking accounts
+
+If it is straightforward with the same Plaid custom-user mechanism, create a second temporary Item with:
+
+- two eligible checking accounts.
+
+Pass it through `/api/plaid/connect` and verify:
+
+- the server returns two eligible accounts,
+- each contains only its own normalized transactions and coverage metadata.
+
+This is useful real-API verification for the multiple-account path.
+
+Do not spend substantial time on this if the custom-user schema makes it cumbersome; the client selector itself remains covered by deterministic component tests and manual browser verification.
+
+---
+
+## 6. Do not persist test credentials or Items
+
+Do not save:
+
+- public token,
+- access token,
+- custom-user password/configuration containing temporary test data
+
+into committed files.
+
+An ephemeral script is preferred.
+
+Delete it afterward.
+
+`.env.local` remains local and ignored.
+
+---
+
+## 7. Do not change production product behavior
+
+If the custom-history test succeeds:
+
+make no product-code changes.
+
+If it exposes a real defect:
+
+stop and report the defect before making an architectural change.
+
+A narrow implementation bug may be fixed within Checkpoint D, followed by:
+
+- `pnpm test`
+- `pnpm type-check`
+- `pnpm lint`
+- `pnpm build`
+
+---
+
+## Final API verification report
+
+Report:
+
+1. Whether custom Sandbox user creation succeeded.
+2. Whether Affordly `/api/plaid/connect` returned HTTP 200.
+3. Eligible checking-account count.
+4. Normalized posted-transaction count.
+5. Earliest posted transaction month.
+6. Derived `firstSupportedMonth`.
+7. Number of supported complete months.
+8. Actual analyzed period.
+9. Whether `runBacktest()` returned an eligible result.
+10. Readiness status observed.
+11. Number of sync attempts/retries.
+12. Confirmation that current partial month was excluded.
+13. Confirmation that no access token or secret appeared in the safe response.
+14. Multiple-account real API result, if tested.
+15. Any implementation discrepancy discovered.
+16. Any code change required.
+17. Confirmation that:
+    - temporary test tooling was removed,
+    - no custom Sandbox behavior entered product code,
+    - no token was persisted,
+    - Task 9 did not begin,
+    - Task 10 did not begin,
+    - nothing was committed,
+    - nothing was pushed.
+
+Stop after the report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T20:01:38Z
+
+Checkpoint D — Tasks 6, 7, and 8 have passed review and are approved.
+
+The manual Plaid Link browser flow has also been verified by the reviewer and is working as expected.
+
+Do not begin Task 9 or Task 10 yet.
+
+Do not begin FIAT work.
+
+## Approved Checkpoint D scope
+
+The following are accepted:
+
+- Plaid Sandbox server configuration,
+- `/api/plaid/link-token`,
+- session-scoped non-PII UUID,
+- `/api/plaid/connect`,
+- public-token exchange,
+- server-only access-token handling,
+- checking-account filtering,
+- `/transactions/sync`,
+- full cursor pagination,
+- `added` / `modified` / `removed` reconciliation,
+- mutation-during-pagination restart behavior,
+- posted-only normalization,
+- Plaid sign conversion,
+- conservative `firstSupportedMonth` derivation,
+- readiness-state handling,
+- `history_preparing`,
+- insufficient-history behavior,
+- one-account auto-selection,
+- multiple-account inline selection,
+- Plaid Sandbox client state machine,
+- Demo recovery,
+- shared Demo/Plaid financial engine,
+- real Sandbox API verification,
+- real custom-history six-month eligible path,
+- manual Plaid Link verification.
+
+---
+
+## Final documentation correction
+
+Before committing, review `design.md` and any related Checkpoint D documentation for wording that implies:
+
+> transaction history is always fully ready when Plaid Link returns `public_token`
+
+That claim must not remain.
+
+Use accurate wording:
+
+- Plaid Transactions history is asynchronous.
+- An Item may return before full historical transaction data is available.
+- Affordly uses bounded waiting/retry for this Sandbox MVP.
+- `history_preparing` handles the case where sufficient history has not arrived within that bounded window.
+- Production-grade Transactions integration would normally use persistent access-token storage plus Plaid webhooks / subsequent sync calls.
+- Webhooks and persistence remain intentionally outside this assessment MVP.
+
+Do not change the approved architecture.
+
+Do not add persistence or webhooks.
+
+This is documentation clarification only.
+
+---
+
+## Final pre-commit verification
+
+Run:
+
+- `git status`
+- `git diff --stat`
+- `git diff`
+
+Confirm intended Checkpoint D changes are limited to:
+
+- Plaid API boundary types,
+- Plaid server client/helper logic,
+- Link-token route,
+- connect route,
+- Plaid adapter,
+- Plaid client components,
+- account-selection UI,
+- Demo/Plaid state integration,
+- Checkpoint D tests,
+- minimal approved design clarification,
+- task progress,
+- collaboration history.
+
+Confirm no:
+
+- `.env.local`
+- Plaid credentials
+- access token
+- public token
+- Sandbox temporary scripts
+- custom-user test configuration
+- FIAT package
+- Recharts
+- production Plaid configuration
+- webhook
+- database/session persistence
+
+is included.
+
+---
+
+## Re-run Checkpoint D quality checks
+
+Run:
+
+`pnpm test`
+`pnpm type-check`
+`pnpm lint`
+`pnpm build`
+
+All must pass.
+
+Confirm the expected total remains at least the currently verified:
+
+`154 passing tests`
+
+If test count changed due only to final approved fixes, report the new number.
+
+---
+
+## Security verification
+
+Confirm once more:
+
+### Never committed or returned to browser
+- `PLAID_SECRET`
+- Plaid `access_token`
+
+### Allowed browser/server flow
+- Link token
+- temporary `public_token`
+- normalized financial data
+
+Confirm:
+
+- `.env.local` remains ignored,
+- `.env.example` contains placeholders only,
+- Sandbox-only environment is enforced.
+
+---
+
+## Real integration verification to preserve in documentation
+
+Record accurately that Checkpoint D verified:
+
+### Real Sandbox API
+- `/sandbox/public_token/create` succeeded,
+- Affordly `/api/plaid/connect` returned HTTP 200,
+- checking-account filtering worked,
+- transaction sync worked,
+- normalization worked,
+- safe response contained no secret/access token.
+
+### Real six-month historical path
+Using an ephemeral Plaid `user_custom` Sandbox Item:
+
+- historical checking data extended beyond M−6,
+- boundary month was excluded,
+- `firstSupportedMonth` correctly became M−6,
+- six complete months were analyzed,
+- current partial month was excluded,
+- `runBacktest()` returned an eligible six-month result through `source: 'plaid'`.
+
+### Multiple-account path
+Real custom Sandbox verification returned two eligible checking accounts with independent transaction histories.
+
+### Manual browser verification
+The reviewer confirmed the Plaid Link flow works in the browser.
+
+Do not include any token values, credentials, or unnecessary transaction/account details.
+
+---
+
+## Update task progress
+
+Update `tasks.md` to mark:
+
+- Task 6 — Complete
+- Task 7 — Complete
+- Task 8 — Complete
+
+Do not mark:
+
+- Task 9
+- Task 10
+- Task 11
+
+as started or complete.
+
+Checkpoint D should be shown as complete.
+
+---
+
+## Collaboration history
+
+Verify `docs/ai-collaboration/prompts.md` includes the full Checkpoint D collaboration sequence, including:
+
+- initial Plaid implementation prompt,
+- real Sandbox verification prompts,
+- credential-safety correction,
+- corrected `days_requested` verification,
+- custom-history verification,
+- manual Link verification confirmation,
+- this approval/closure prompt.
+
+Preserve raw prompt history.
+
+---
+
+## Commit
+
+Stage only the approved Checkpoint D changes.
+
+Create the commit:
+
+`feat: integrate Plaid Sandbox workflow`
+
+Push it to:
+
+`main`
+
+on the configured Affordly GitHub remote.
+
+Do not begin Checkpoint E after pushing.
+
+---
+
+## Completion report
+
+After the push succeeds, report:
+
+1. Commit hash
+2. Files included
+3. Tasks 6, 7, and 8 completion status
+4. Final test count
+5. Results of:
+   - `pnpm test`
+   - `pnpm type-check`
+   - `pnpm lint`
+   - `pnpm build`
+6. Confirmation that the real Plaid Sandbox API path was verified
+7. Confirmation that a real six-month custom-history Plaid analysis was verified
+8. Confirmation that manual Plaid Link verification passed
+9. Confirmation that readiness wording was corrected in documentation
+10. Confirmation that Demo and Plaid still use the same financial engine
+11. Confirmation that no access token is persisted
+12. Confirmation that no secrets were committed
+13. Confirmation that Checkpoint D collaboration prompts were committed
+14. Remote and branch pushed
+15. Final `git status`
+16. Confirmation that:
+   - Task 9 has not begun,
+   - Task 10 has not begun,
+   - FIAT work has not begun,
+   - no production Plaid behavior was added,
+   - no webhook was added.
+
+Stop after the Checkpoint D closure report.
+
+*End of entry*

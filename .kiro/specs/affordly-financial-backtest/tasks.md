@@ -338,7 +338,7 @@ working, reviewable product — without any Plaid dependency.
 ## Task 6 — Plaid Sandbox Server Integration
 
 **Checkpoint:** D (begins)  
-**Dependencies:** Tasks 1 and 2  
+**Status:** ✅ Complete  
 **Requirements ref:** §9 (Plaid Integration), §10 (Account Selection), §11 (Loading/Errors)  
 **Design ref:** §9 (Plaid Sandbox Architecture), §7.2 (Plaid Adapter)
 
@@ -446,7 +446,7 @@ It is independent of Tasks 3–5 (Demo/UI) and may be implemented in parallel wi
 ## Task 7 — Plaid Sandbox Client Flow
 
 **Checkpoint:** D (completes)  
-**Dependencies:** Tasks 5, 6  
+**Status:** ✅ Complete  
 **Requirements ref:** §§9–11 (Plaid, History, Loading/Error)  
 **Design ref:** §9.5 (Account Selection Flow), §§11–13 (Components, UX, State)
 
@@ -521,7 +521,7 @@ enter the same normalized model and analysis engine as Demo Mode — no separate
 ## Task 8 — Cross-Mode Validation and Product-Boundary Review
 
 **Checkpoint:** D (validation)  
-**Dependencies:** Tasks 5, 7  
+**Status:** ✅ Complete  
 **Requirements ref:** All §§1–14 (full requirements against implementation)  
 **Design ref:** §8 (Cross-mode validation)
 
