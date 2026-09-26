@@ -1151,3 +1151,1168 @@ Do not begin Phase 3.
 Stop after the Phase 2 closure report.
 
 *End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T14:55:35Z
+
+We are beginning **Phase 3: Formal Requirements Specification** for Affordly.
+
+This phase begins Kiro's actual spec-driven workflow.
+
+The assessment explicitly evaluates the quality of the Kiro requirements, technical design, and task breakdown as heavily as the code, as well as how I collaborate with AI while developing them.
+
+Therefore, do not optimize for getting to implementation quickly.
+
+## Workflow requirement
+
+Create a **Feature Spec** using Kiro's **Requirements-First** workflow.
+
+Do **not** use Quick Spec.
+
+Do **not** use Design-First.
+
+For this interaction, work on the **requirements phase only**.
+
+Generate `requirements.md`, but do not proceed to:
+- `design.md`
+- `tasks.md`
+- implementation
+- package installation
+- code changes
+
+I want to review, challenge, and analyze the requirements before approving progression to technical design.
+
+Use an appropriate spec name that clearly represents the core Affordly MVP, for example:
+
+`affordly-financial-backtest`
+
+If Kiro requires a different filesystem-safe naming convention, use the closest equivalent.
+
+---
+
+# Authoritative product context
+
+Before generating requirements, read the approved Product Direction Brief already committed to this repository:
+
+`product-direction.md`
+
+Treat that document as the authoritative source for the current product direction.
+
+Do not silently expand the product beyond that brief.
+
+The application is called **Affordly**.
+
+At a high level:
+
+> Affordly helps a consumer evaluate a proposed recurring monthly financial commitment by retrospectively applying that payment to their own recent monthly cash-flow history.
+
+The primary MVP scenario is vehicle financing.
+
+For example, a consumer considering a `$475/month` vehicle payment should be able to see what would have happened if that payment had existed during each of their recent complete months.
+
+Affordly is deliberately a **retrospective financial backtest**, not a future prediction and not an affordability recommendation.
+
+---
+
+# Core product principle
+
+The application must help answer:
+
+> **How would this monthly payment have fit into the financial months I just lived through?**
+
+It must not answer:
+
+> “Can I afford this?”
+
+The distinction is intentional.
+
+Affordly should present historical evidence and allow the user to make their own judgment.
+
+---
+
+# Core MVP behavior
+
+The approved product direction currently establishes the following behavior.
+
+## Inputs
+
+The user provides:
+
+1. A proposed recurring monthly payment.
+2. A user-defined monthly cushion.
+
+The monthly cushion represents the amount of monthly cash flow the user personally wants to remain after their normal cash outflows and the hypothetical payment.
+
+It is:
+- chosen by the user,
+- adjustable,
+- not an Affordly recommendation,
+- not a universal affordability threshold.
+
+Both Demo Mode and Plaid Mode may start with clearly labeled example/default values so that the experience renders immediately.
+
+---
+
+## Historical analysis
+
+Affordly targets the six most recent **complete calendar months**.
+
+The current partial month is excluded.
+
+For each historical month:
+
+`monthly cash flow = cash in - cash out`
+
+Identifiable internal transfers between the user's own accounts are excluded from both cash-in and cash-out calculations.
+
+Then:
+
+`simulated monthly cash flow = monthly cash flow - proposed monthly payment`
+
+Affordly does not reconstruct historical daily balances.
+
+Affordly does not model the day during the month when the hypothetical payment would occur.
+
+---
+
+## Month statuses
+
+Each analyzed month has one descriptive simulation status:
+
+### Negative
+
+When:
+
+`simulated monthly cash flow < 0`
+
+### Below cushion
+
+When:
+
+`simulated monthly cash flow >= 0`
+and
+`simulated monthly cash flow < user's monthly cushion`
+
+### Above cushion
+
+When:
+
+`simulated monthly cash flow >= user's monthly cushion`
+
+These statuses are descriptive.
+
+They must never be translated into language such as:
+- affordable / unaffordable,
+- safe / unsafe,
+- good / bad,
+- recommended / not recommended.
+
+---
+
+# Data modes
+
+The MVP has two data paths.
+
+## Demo Mode
+
+A deterministic sample dataset containing exactly six complete months.
+
+Demo Mode exists so:
+- the application can be understood immediately,
+- the reviewer can experience the entire product without external setup,
+- the intended financial scenario is always reproducible.
+
+Demo Mode is a first-class experience, not merely an error fallback.
+
+## Plaid Sandbox
+
+The application also integrates Plaid Sandbox transaction history.
+
+The Plaid path:
+- uses the same analysis engine as Demo Mode,
+- normalizes Plaid-specific data before analysis,
+- uses the primary checking-account history,
+- excludes identifiable internal transfers.
+
+History behavior:
+
+- 6 complete months available → analyze 6
+- 3–5 complete months available → analyze those available months and display the actual range
+- fewer than 3 complete months available → do not run the backtest and clearly explain why
+
+Production Plaid is outside the MVP.
+
+---
+
+# Month detail
+
+A user must be able to inspect an individual historical month.
+
+Keep this deliberately limited.
+
+The month detail should expose:
+
+- total cash in,
+- total cash out,
+- original monthly cash flow/cushion before the hypothetical payment,
+- simulated monthly cash flow after the proposed payment,
+- up to the three largest non-excluded cash movements for that month, ordered by absolute transaction value.
+
+The purpose is explainability.
+
+Do not turn this into a transaction-management or budgeting feature.
+
+---
+
+# Interaction behavior
+
+Changing either:
+
+- proposed monthly payment, or
+- monthly cushion
+
+should immediately update the historical backtest without requiring a full-page reload.
+
+The result should include:
+- each analyzed month individually,
+- its simulated status,
+- the original and simulated monthly cash-flow values,
+- a concise summary of how many months fell into each relevant status.
+
+Example style of summary:
+
+> “With a $475 monthly payment, 2 of your last 6 months would have fallen below your $300 cushion. 1 of those months would have been negative.”
+
+This example illustrates tone only. Do not hardcode these values.
+
+---
+
+# Important product limitations
+
+Requirements must preserve the following product boundaries.
+
+Affordly does not claim:
+
+- that the user can afford the payment,
+- that the user cannot afford the payment,
+- that historical financial performance predicts future performance,
+- that the user should accept or decline financing,
+- accuracy about intra-month liquidity,
+- accuracy about daily historical balances,
+- to provide financial advice,
+- to assess creditworthiness.
+
+The experience must make the analyzed historical date range visible.
+
+At least one in-product disclosure must make the retrospective nature and key limitation of the analysis clear.
+
+The README will later contain fuller limitation documentation.
+
+---
+
+# Explicit MVP non-goals
+
+Do not introduce requirements for:
+
+- authentication
+- user accounts
+- session persistence
+- database persistence
+- production Plaid
+- Plaid webhooks or continuous transaction synchronization
+- multiple scenario comparison
+- future cash-flow forecasting
+- budgeting workflows
+- spending-category management
+- credit-score functionality
+- DTI calculation
+- credit-card transaction aggregation
+- savings recommendations
+- anomaly detection
+- AI-generated financial explanations
+- historical daily-balance reconstruction
+- payment-date modeling
+- excluding individual historical months
+- financial recommendations or advice
+
+Do not add functionality simply because it is common in fintech products.
+
+Scope discipline is explicitly being evaluated.
+
+---
+
+# UX and design requirement
+
+The assessment specifically asks us to reference the **Nymbus Joy Design System**.
+
+At the requirements level, capture the user-facing expectation that the experience should:
+
+- have clear visual hierarchy,
+- provide understandable loading, empty, success, and error states,
+- be reasonably responsive,
+- be accessible through appropriate semantic structure and interaction states,
+- use the Nymbus Joy Design System as the visual/design reference where appropriate.
+
+Do not choose specific colors, typography tokens, component implementations, or layouts yet.
+
+Those belong to technical/UI design after the requirements have been approved and the Nymbus Joy documentation has been inspected.
+
+---
+
+# External integration behavior
+
+Plaid failures must not make Affordly unusable.
+
+Requirements should cover appropriate user-facing behavior for situations such as:
+
+- Plaid connection cancelled by the user,
+- Plaid connection error,
+- transaction retrieval failure,
+- insufficient historical data,
+- no eligible primary checking account,
+- successful Plaid connection and analysis.
+
+Demo Mode must remain available as a reliable way to experience Affordly.
+
+Do not prescribe implementation details such as exact API routes yet.
+
+---
+
+# Requirements quality
+
+Create requirements that are:
+
+- clear,
+- individually testable,
+- behavior-oriented rather than implementation-oriented,
+- traceable back to the user problem,
+- appropriate for the approximately three-hour MVP,
+- explicit about important failure states and edge cases.
+
+Use Kiro's structured requirement style, including user stories and EARS-style acceptance criteria where appropriate.
+
+Avoid requirements such as:
+
+> “The application should be intuitive.”
+
+unless they are translated into observable/testable behavior.
+
+Avoid technical-design decisions in `requirements.md` unless they are genuinely product constraints.
+
+Do not invent features that are absent from `product-direction.md` merely to make the specification appear comprehensive.
+
+---
+
+# Areas that deserve particular scrutiny
+
+While drafting the requirements, ensure they address:
+
+1. Demo Mode behavior
+2. Proposed-payment input and validation
+3. Monthly-cushion input and validation
+4. Historical monthly calculation
+5. Internal-transfer exclusion
+6. Month-status calculation
+7. Summary behavior
+8. Month-detail behavior
+9. Plaid connection states
+10. Minimum-history behavior
+11. Loading and error handling
+12. Retrospective/disclosure language
+13. Date-range visibility
+14. Reasonable responsive/accessibility expectations
+15. Consistency between Demo and Plaid data paths
+
+Consider relevant numeric edge cases such as:
+
+- zero proposed payment,
+- negative input,
+- empty input,
+- very large values,
+- zero cushion,
+- months with zero cash inflow,
+- months with zero cash outflow,
+- exactly-zero simulated cash flow,
+- simulated cash flow exactly equal to the selected cushion.
+
+Do not over-engineer edge cases that do not materially affect this MVP.
+
+---
+
+# AI collaboration expectation
+
+Do not assume the generated requirements are automatically approved.
+
+The purpose of this phase is for me to inspect and challenge your specification.
+
+If you encounter an ambiguity that cannot be resolved from `product-direction.md`, make the smallest defensible assumption and explicitly list it after generating the requirements rather than silently expanding product scope.
+
+---
+
+# Stop condition
+
+When `requirements.md` has been generated:
+
+1. Stop before design.
+2. Do not generate `design.md`.
+3. Do not generate `tasks.md`.
+4. Do not modify application code.
+5. Do not install dependencies.
+6. Do not commit or push.
+
+Give me a concise report containing:
+
+- spec name/path,
+- number of user stories,
+- major requirement areas covered,
+- any assumptions you had to make,
+- any requirement you believe deserves human review,
+- confirmation that you have not proceeded to design.
+
+Wait for my review.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T15:22:41Z
+
+I reviewed the first draft of `requirements.md`.
+
+Before running the formal requirements analysis, I want to make a deliberate human-review revision pass.
+
+Do not proceed to design.
+
+Do not create `design.md` or `tasks.md`.
+
+Do not modify application code or install packages.
+
+Do not commit or push.
+
+Update the requirements specification only as necessary to incorporate the following decisions.
+
+## 1. Correct the complete-month date-range error
+
+Requirement 4.3 currently contains an off-by-one error.
+
+If the current calendar month is `M`, the six most recent complete calendar months are:
+
+`M−1` through `M−6`
+
+not `M−1` through `M−7`.
+
+Correct the requirement and any related language.
+
+The current partial month remains excluded.
+
+---
+
+## 2. Clarify Plaid Sandbox truthfully
+
+The current requirements incorrectly describe Plaid Sandbox as providing the user's real bank transaction history.
+
+For this take-home prototype:
+
+- Demo Mode uses our deterministic authored sample dataset.
+- Plaid Sandbox Mode uses transaction data retrieved through a real Plaid API integration, but that financial data is Sandbox/test data.
+- Production connectivity to a user's real financial institution is explicitly outside the MVP.
+
+Revise the Plaid user story and requirements so they do not call Sandbox data:
+
+- real user data,
+- real account data,
+- actual personal financial history.
+
+The value of Plaid Sandbox in this assessment is demonstrating that Affordly's normalized data pipeline and backtest engine can operate through an external financial-data API integration.
+
+The intended production product could later use permissioned real-bank data, but the take-home prototype does not.
+
+This distinction should eventually also appear in the README.
+
+---
+
+## 3. Simplify the transfer model
+
+I am changing one previously approved product assumption after reviewing the requirements more closely.
+
+Do not attempt to identify and exclude internal transfers in the MVP.
+
+Affordly will analyze **cash movement through the selected primary checking account**.
+
+Therefore:
+
+- money entering the primary checking account counts as cash in,
+- money leaving the primary checking account counts as cash out,
+- checking → savings counts as cash out,
+- savings → checking counts as cash in,
+- identifiable credit-card payments from checking count as cash out,
+- Affordly does not separately aggregate the underlying credit-card purchases.
+
+This intentionally measures the historical behavior of the primary checking account rather than claiming to measure the user's entire financial system.
+
+Remove the internal-transfer exclusion requirement section and update all formulas, definitions, month-detail rules, Demo/Plaid consistency rules, limitations, and edge cases that reference transfer exclusion.
+
+Do not replace this with a sophisticated transfer-matching mechanism.
+
+Document as a limitation that significant transfers between accounts can influence a month's apparent cash flow. The month-detail view helps the user identify when a large transfer materially affected a month.
+
+Update `product-direction.md` only where necessary to reflect this Phase 3 refinement so that the approved product direction does not contradict the requirements.
+
+Preserve the rest of the approved product direction.
+
+This change is intentional and emerged from requirements review.
+
+---
+
+## 4. Analyze posted Plaid transactions only
+
+Add an explicit requirement that only **posted transactions** participate in Plaid historical analysis.
+
+Pending transactions must not contribute to:
+
+- monthly cash in,
+- monthly cash out,
+- month detail,
+- top-three cash movements,
+- status calculations.
+
+The deterministic Demo dataset should contain finalized/posted-style transactions only.
+
+Do not introduce webhook synchronization or pending-to-posted reconciliation.
+
+Those remain outside the MVP.
+
+---
+
+## 5. Proposed payment must be greater than zero
+
+Remove the special `$0 proposed payment` use case.
+
+Affordly exists to evaluate a concrete proposed recurring payment.
+
+The original monthly cash-flow values already let the user see the historical baseline, so a zero-dollar hypothetical payment is unnecessary to the core job.
+
+Revise the requirements so:
+
+`proposed payment > 0`
+
+is required to run the simulation.
+
+Therefore:
+
+- empty payment → invalid/incomplete
+- zero payment → invalid
+- negative payment → invalid
+- positive numeric payment → valid
+
+Use concise, helpful validation language.
+
+Remove the `$0 payment` summary behavior and corresponding edge cases.
+
+Do not create a separate baseline-analysis feature.
+
+---
+
+## 6. Keep a zero-dollar monthly cushion valid
+
+A `$0` cushion remains valid.
+
+Its meaning is:
+
+> The user is only distinguishing non-negative simulated monthly cash flow from negative simulated monthly cash flow.
+
+With a `$0` cushion:
+
+- simulated cash flow `< 0` → Negative
+- simulated cash flow `>= 0` → Above Cushion
+- Below Cushion cannot occur
+
+Keep this behavior.
+
+---
+
+## 7. Keep month-detail cash movements bidirectional
+
+Keep the existing requirement that the three largest month-detail cash movements are selected by absolute dollar value regardless of direction.
+
+Large inflows and large outflows should compete for the same three positions.
+
+This matters because an unusually large inflow such as a bonus or tax refund may explain why one historical month appears materially stronger than others.
+
+No change in direction is required here.
+
+---
+
+## 8. Keep the retrospective disclosure in the primary analysis experience
+
+Keep the requirement that at least one clear retrospective/product-boundary disclosure is visible in the main analysis experience without requiring navigation to another page or opening a modal.
+
+Do not prescribe its exact placement yet.
+
+Its visual treatment belongs to design.
+
+The requirement is simply that a reasonable user encounters the disclosure as part of the core analysis experience.
+
+---
+
+## 9. Strengthen the Nymbus Joy requirement
+
+The assessment specifically asks that this exercise reference the Nymbus Joy Design System and use its components and UI standards as guidance where appropriate.
+
+Therefore, change the optional `SHOULD` requirement into a project constraint such as:
+
+> The application visual and interaction design MUST use the Nymbus Joy Design System as its primary design reference where applicable.
+
+Do not choose:
+
+- exact colors,
+- typography values,
+- spacing values,
+- component implementations
+
+inside `requirements.md`.
+
+Those decisions belong to the design phase after the Nymbus Joy documentation has been inspected.
+
+The requirement is that the finished experience demonstrably reflects Joy guidance, not that every Joy component must be reproduced.
+
+---
+
+## 10. Make Affordly mobile-driven while fully supporting web/desktop
+
+I want to change the responsive-product assumption.
+
+Affordly should be conceived primarily as a **mobile-driven financial decision experience**.
+
+The primary scenario supports this: a consumer may evaluate a proposed vehicle payment or other financial commitment at the moment the decision is being made, when a phone is likely to be the device immediately available.
+
+Therefore:
+
+### Mobile
+
+The core Affordly workflow MUST be designed and fully functional starting at approximately a `375px` viewport width.
+
+At mobile widths:
+
+- all core functionality must remain available,
+- proposed-payment and cushion controls must be easy to operate,
+- the summary must remain understandable,
+- every analyzed month must remain accessible,
+- month details must remain accessible,
+- Plaid connection must remain accessible,
+- disclosures and validation must remain readable,
+- critical information must not require horizontal page scrolling.
+
+The application should feel intentional on a phone rather than like a desktop interface compressed onto a smaller screen.
+
+### Desktop and web
+
+Mobile priority must **not** result in a reduced desktop experience.
+
+At tablet and desktop widths:
+
+- 100% of the same core functionality must remain available,
+- layouts may adapt to make better use of available space,
+- financial information must remain clearly organized,
+- no functionality may be exclusive to mobile,
+- the experience must remain polished and appropriate for browser-based review.
+
+Desktop/web is therefore a full supported experience, not a fallback.
+
+### Requirements boundary
+
+Do not prescribe exact responsive layouts, breakpoints beyond the approximate minimum mobile target, navigation patterns, card grids, drawers, sheets, or other component choices yet.
+
+Those belong to the design phase.
+
+The requirements should establish:
+
+> **Mobile is the primary UX consideration; mobile and desktop must both provide the complete Affordly workflow.**
+
+Do not introduce native iOS or Android requirements.
+
+Do not introduce App Store, Google Play, PWA, Capacitor, React Native, or other future platform requirements.
+
+Those are outside this MVP.
+
+---
+
+## 11. Remove arbitrary payment limits
+
+Review the requirement concerning payment maximum values.
+
+The product should support realistic positive monthly payment amounts, but the specification does not need an arbitrary `$9,999` product rule solely to manufacture a testable boundary.
+
+Remove that arbitrary threshold.
+
+Require instead that the application:
+
+- accepts realistic positive currency values,
+- rejects invalid numeric input,
+- rejects non-finite values,
+- handles large valid values without calculation failure or broken presentation.
+
+Do not invent a financial maximum that Affordly does not actually impose.
+
+---
+
+## 12. Keep requirements behavior-oriented and appropriately scoped
+
+Review the requirements for unnecessary duplication introduced by the first draft.
+
+Consolidate only where doing so improves clarity and traceability.
+
+Do not reduce specificity merely to make the requirement count smaller.
+
+Do not add requirements merely to maintain the previous count.
+
+Quality, testability, and traceability matter more than quantity.
+
+The expected take-home effort is approximately three hours, so requirements should describe the smallest polished product that proves the core idea.
+
+---
+
+## Scope remains unchanged
+
+Do not introduce:
+
+- authentication
+- user accounts
+- database persistence
+- production Plaid
+- webhooks
+- future cash-flow forecasting
+- DTI
+- credit scores
+- budgeting
+- financial recommendations
+- AI-generated financial explanations
+- daily balance reconstruction
+- transaction editing or categorization
+- sophisticated transfer matching
+- native mobile applications
+- App Store or Google Play distribution
+
+The core application remains a focused retrospective financial backtest.
+
+---
+
+## Completion
+
+After revising:
+
+1. Report which requirements were changed, removed, added, or consolidated.
+2. Report the new total number of requirement sections and individual requirements.
+3. Identify any new contradiction created by these changes.
+4. Identify any ambiguity that still deserves human judgment.
+5. Confirm `product-direction.md` is consistent with the revised primary-checking cash-flow model.
+6. Confirm the requirements now treat Affordly as mobile-driven while preserving the complete desktop/web experience.
+7. Confirm `design.md` and `tasks.md` still do not exist.
+8. Do not commit or push.
+
+Stop after the revision report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T15:30:21Z
+
+Analyze the current revised `requirements.md` before any technical design work begins.
+
+This is still Phase 3: Formal Requirements Specification.
+
+Do not create `design.md`.
+
+Do not create `tasks.md`.
+
+Do not modify application code.
+
+Do not install packages.
+
+Do not commit or push.
+
+The purpose of this pass is to challenge the requirements as a complete system, not to add functionality or optimize the implementation.
+
+Use the current `requirements.md` and `docs/product/product-direction.md` as the authoritative project context.
+
+## Analysis goals
+
+Look across the full requirement set for:
+
+- logical inconsistencies,
+- conflicting requirements,
+- ambiguous terminology,
+- undefined behavior,
+- duplicated requirements that could diverge,
+- missing boundary conditions,
+- missing user-visible failure states,
+- assumptions that are currently hidden,
+- requirements that accidentally prescribe technical implementation,
+- requirements that cannot be objectively tested,
+- requirements that expand beyond the approved MVP,
+- contradictions between `requirements.md` and `product-direction.md`.
+
+Pay particular attention to interactions between requirements rather than reviewing each requirement in isolation.
+
+---
+
+## Areas requiring especially careful analysis
+
+### Payment input
+
+Confirm there is one consistent rule:
+
+`proposed payment > 0`
+
+Check behavior for:
+
+- empty input,
+- zero,
+- negative values,
+- decimals,
+- invalid/non-numeric values,
+- non-finite values,
+- large but valid values.
+
+Verify no obsolete `$0 payment` behavior remains anywhere in the spec.
+
+---
+
+### Monthly cushion and month-status boundaries
+
+Confirm that `$0` is a valid cushion.
+
+Verify the status rules have no gaps or overlaps:
+
+- simulated cash flow `< 0` → Negative
+- simulated cash flow `>= 0` and `< cushion` → Below Cushion
+- simulated cash flow `>= cushion` → Above Cushion
+
+Specifically verify:
+
+- simulated cash flow exactly `$0`,
+- simulated cash flow exactly equal to cushion,
+- cushion exactly `$0`.
+
+---
+
+### Historical month selection
+
+Confirm the six-month calculation is correct:
+
+- current calendar month excluded,
+- six most recent complete months = `M−1` through `M−6`.
+
+Check that the requirements for Plaid histories containing 3–5 complete months remain consistent with this rule.
+
+---
+
+### Primary checking-account behavior
+
+The MVP analyzes one checking account at a time.
+
+Resolve multiple eligible checking accounts explicitly as product behavior:
+
+- exactly one eligible checking account → use that account,
+- multiple eligible checking accounts → the user must be able to choose which checking account is analyzed before the backtest runs,
+- no eligible checking account → do not run the Plaid backtest; explain the issue and offer Demo Mode.
+
+Do not silently select an arbitrary checking account when multiple eligible accounts exist.
+
+Add or revise requirements if necessary.
+
+Do not expand this into multi-account aggregation.
+
+---
+
+### Cash-flow model
+
+Confirm the entire spec consistently reflects the approved simplified model:
+
+`monthly cash flow = cash entering the selected checking account - cash leaving the selected checking account`
+
+No internal-transfer exclusion exists.
+
+Transfers between the user's accounts may therefore affect calculated monthly cash flow and must be treated consistently with all other posted checking-account movements.
+
+Confirm no obsolete language remains referring to:
+
+- internal-transfer exclusion,
+- measuring the user's whole financial system,
+- excluding savings transfers.
+
+---
+
+### Posted vs pending transactions
+
+Confirm only posted Plaid transactions participate in:
+
+- cash-in totals,
+- cash-out totals,
+- monthly calculations,
+- month-detail transactions,
+- top-three cash movements,
+- month statuses.
+
+Pending transactions must be excluded consistently.
+
+Do not introduce synchronization, webhooks, or pending-to-posted reconciliation.
+
+---
+
+### Demo Mode vs Plaid Sandbox
+
+Confirm the specification clearly distinguishes:
+
+**Demo Mode**
+- deterministic authored sample financial history.
+
+**Plaid Sandbox Mode**
+- test financial data retrieved through an actual Plaid Sandbox API integration.
+
+Ensure no requirement describes Plaid Sandbox as:
+- live bank data,
+- the user's actual bank history,
+- production financial data.
+
+Both data paths must ultimately feed the same normalized analysis behavior.
+
+---
+
+### Month detail
+
+Confirm the detail view remains intentionally constrained.
+
+It should contain only the approved explanatory information, including up to the three largest posted cash movements by absolute value.
+
+Check that large inflows and outflows compete for those three positions.
+
+Ensure the detail view does not accidentally evolve into:
+- transaction management,
+- budgeting,
+- categorization,
+- anomaly detection,
+- AI explanation.
+
+---
+
+### Retrospective product language
+
+Search the complete specification for wording that could imply prediction, affordability judgment, financial advice, or recommendation.
+
+Affordly must describe:
+
+> what would have happened in historical months under the hypothetical payment.
+
+It must not claim:
+
+- the user can afford the payment,
+- the user cannot afford the payment,
+- the payment is safe or unsafe,
+- the user should accept or reject financing,
+- historical results predict the future.
+
+---
+
+### Mobile-driven and desktop-complete experience
+
+Confirm the requirements consistently establish:
+
+- mobile as the primary UX consideration,
+- complete core functionality at approximately 375px and above,
+- no critical horizontal page scrolling on mobile,
+- all inputs, results, month details, Plaid actions, validation, and disclosures available on mobile,
+- 100% of the same product capability on tablet and desktop,
+- an equally intentional and polished browser/desktop experience.
+
+Do not introduce native mobile, App Store, Google Play, PWA, React Native, or similar platform requirements.
+
+---
+
+### Nymbus Joy
+
+Confirm the requirement clearly treats the Nymbus Joy Design System as the primary design and interaction reference where applicable because this is explicitly requested by the assessment.
+
+Do not specify Joy tokens or components yet.
+
+Those decisions belong to the design phase after the design-system documentation is inspected.
+
+---
+
+### Scope protection
+
+Explicitly identify any requirement that unnecessarily expands implementation beyond the approved MVP.
+
+The expected implementation is intentionally small.
+
+Do not introduce:
+
+- authentication,
+- database persistence,
+- production Plaid,
+- webhooks,
+- multi-account aggregation,
+- forecasting,
+- budgeting,
+- DTI,
+- credit scores,
+- AI-generated explanations,
+- recommendations,
+- transaction editing,
+- daily balance reconstruction,
+- payment-date modeling.
+
+If a missing edge case can be handled transparently rather than by adding significant functionality, prefer transparency.
+
+---
+
+## Analysis behavior
+
+Do not silently resolve meaningful ambiguity.
+
+For each meaningful issue found:
+
+1. Identify the affected requirement numbers.
+2. Explain the inconsistency, ambiguity, or gap.
+3. Explain why it matters to user behavior or testability.
+4. Recommend the smallest correction consistent with the approved MVP.
+5. Distinguish:
+   - requirement-level issues that must be resolved now,
+   - design decisions that can safely wait for `design.md`.
+
+If the Analyze Requirements workflow presents individual clarification questions, preserve that question-by-question process rather than automatically accepting every suggested fix.
+
+Do not enlarge the feature merely to achieve theoretical completeness.
+
+---
+
+## Completion condition
+
+After all requirement-level findings have been reviewed and resolved:
+
+1. Update `requirements.md` only for approved requirement-level corrections.
+2. Update `product-direction.md` only if a requirement correction would otherwise create a direct contradiction.
+3. Report:
+   - issues discovered,
+   - corrections applied,
+   - issues deliberately dismissed and why,
+   - items explicitly deferred to technical design,
+   - final number of requirement sections,
+   - final number of individual requirements,
+   - whether any blocking requirement ambiguity remains.
+4. Confirm `design.md` and `tasks.md` do not exist.
+5. Do not commit or push.
+
+Stop after the analysis report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T15:39:33Z
+
+The Phase 3 requirements specification has been reviewed and approved.
+
+The requirements are now considered the accepted functional specification for Affordly.
+
+Do not begin technical design yet.
+
+## Final verification
+
+Before committing:
+
+1. Re-check the complete `requirements.md`.
+2. Confirm its status no longer says `Draft — Awaiting Review`.
+3. Update the status to an appropriate approved state, such as:
+
+`Approved — Phase 3`
+
+4. Confirm `product-direction.md` is consistent with the final requirements, especially:
+   - primary-checking cash-flow model,
+   - Plaid Sandbox test-data framing,
+   - mobile-driven UX,
+   - multiple checking-account behavior,
+   - no internal-transfer exclusion.
+
+5. Confirm:
+   - 14 requirement sections,
+   - 96 individual requirements,
+   - no blocking requirement ambiguities,
+   - no `design.md`,
+   - no `tasks.md`,
+   - no application code changes,
+   - no installed feature dependencies.
+
+## Collaboration history
+
+Verify that `docs/ai-collaboration/prompts.md` contains the full Phase 3 interaction history, including:
+
+- initial Requirements-First specification prompt,
+- human-review revision prompt,
+- requirements-analysis prompt,
+- subsequent requirements corrections and approvals.
+
+Do not rewrite or summarize the raw prompt history.
+
+## Git safety
+
+Re-check `git status` and the staged diff.
+
+Verify that no:
+
+- `.env.local`
+- secrets
+- Plaid credentials
+- build artifacts
+- unintended generated files
+
+are included.
+
+## Commit
+
+Stage the approved Phase 3 specification, the minimally updated product-direction documentation, and the accumulated collaboration history.
+
+Create the commit:
+
+`docs: approve Affordly requirements specification`
+
+Push it to:
+
+`main`
+
+on the configured Affordly GitHub remote.
+
+Do not make unrelated changes while closing the phase.
+
+## Completion report
+
+After the push succeeds, report:
+
+1. Commit hash
+2. Files included
+3. Final requirements path
+4. Final requirement count
+5. Confirmation that the requirements are marked approved
+6. Confirmation that Phase 3 collaboration prompts were committed
+7. Remote and branch pushed
+8. Final `git status`
+
+Do not create `design.md`.
+
+Do not create `tasks.md`.
+
+Do not begin the next phase.
+
+Stop after the Phase 3 closure report.
+
+*End of entry*

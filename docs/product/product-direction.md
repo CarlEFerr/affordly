@@ -66,15 +66,15 @@ the evidence base rather than statistical averages.
 - Accepts a monthly cushion target from the user
 - Analyzes the six most recent complete calendar months of primary checking account activity
   (minimum three months required for Plaid; Demo Mode always provides six)
-- Computes monthly net cash flow per historical month: cash in minus cash out, excluding
-  identifiable internal transfers
+- Computes monthly net cash flow per historical month: total posted cash in minus total posted cash
+  out through the primary checking account (all account transfers included)
 - Applies the proposed payment as an additional monthly outflow to each historical month
 - Displays six month cards: original monthly cushion, simulated monthly cushion, and month status
 - Summarizes how many months fall into each status category
 - Allows the user to adjust the proposed payment and see all six months update without a page reload
 - Allows the user to expand an individual month to see: total cash in, total cash out, original
-  cushion, simulated cushion, and the three largest individual cash movements (by absolute value,
-  from non-excluded transactions)
+  monthly cash flow, simulated monthly cash flow, and the three largest individual cash movements
+  (by absolute value, including both inflows and outflows)
 - Supports two data modes: deterministic Demo Mode and live Plaid Sandbox, normalized to the same
   internal model before the analysis engine runs
 
@@ -109,10 +109,9 @@ the evidence base rather than statistical averages.
 ## 9. Definitions
 
 ### Monthly cash flow
-Cash in minus cash out for a given complete calendar month. Cash in is the sum of all deposits and
-credits to the primary checking account excluding identifiable internal transfers. Cash out is the
-sum of all withdrawals and debits from the primary checking account excluding identifiable internal
-transfers.
+Total cash in minus total cash out for a given complete calendar month, as measured through all
+posted transactions to the primary checking account. All cash movement through the account is
+included — there are no exclusions for account transfers.
 
 ### Monthly cushion
 The amount of monthly cash flow the user personally wants to remain after all normal outflows. It is
@@ -124,14 +123,9 @@ default (labeled as such) so the analysis renders immediately.
 A calendar month that has fully elapsed. The current calendar month, regardless of how many days
 have passed, is not a complete month and is not included in the analysis.
 
-### Internal transfer
-A transaction that represents movement of funds between two accounts owned by the same user — for
-example, checking to savings, savings to checking. When identifiable via Plaid transaction metadata
-or category, these transactions are excluded from both cash-in and cash-out calculations. The purpose
-is to measure cash entering and leaving the user's financial system, not movement within it. Savings
-contributions are excluded on this basis: savings is treated as part of the user's financial system,
-not an outflow from it. If a transfer cannot be confidently identified as internal, it remains in the
-transaction history — this is a known limitation.
+### Posted transaction
+A transaction that has fully settled and is reflected in the account's transaction history. Pending
+transactions are not posted and do not participate in the analysis.
 
 ---
 
@@ -171,8 +165,8 @@ Demo Mode always provides exactly 6 complete months of deterministic data.
 
 - The deterministic demo produces a correct, readable, meaningful backtest result that a reviewer
   can experience without connecting any external account
-- The Plaid Sandbox path fetches real transaction history and produces the same quality of analysis
-  through the same UI
+- The Plaid Sandbox path retrieves test data through a live Plaid Sandbox API integration and
+  produces the same quality of analysis through the same UI
 - A first-time user can identify what question the product answers within 30 seconds without
   documentation
 - No output language implies the product knows whether the user can or should afford the payment
@@ -199,7 +193,7 @@ Demo Mode always provides exactly 6 complete months of deterministic data.
 - Payment timing or intra-month liquidity modeling
 - Anomaly detection or AI-generated explanations
 - Ability to exclude months from the analysis
-- Mobile-first layout (reasonable responsiveness is acceptable; not a primary design target)
+- Multi-account aggregation across checking, savings, and credit accounts
 
 ---
 
@@ -214,24 +208,21 @@ These must appear in the product README and at minimum one in-app disclosure:
    in the analysis is the lump-sum payment from checking. This avoids double-counting but also means
    itemized card spending is not visible.
 
-3. **Internal transfers are excluded.** Checking-to-savings and savings-to-checking transfers are
-   excluded from cash-in and cash-out calculations. This measures cash entering and leaving the
-   user's financial system. Users who rely on savings draws as primary income will see inaccurate
-   results.
+3. **All cash movement through the primary checking account is measured.** Transfers between the
+   user's own accounts — for example, a transfer to savings or a savings draw — appear as cash
+   outflows or cash inflows respectively, because they represent real movement through the primary
+   checking account. Large inter-account transfers can materially affect a month's apparent cash
+   flow. The month-detail view helps users identify when this occurred.
 
-4. **Savings contributions are not counted as outflows.** A user who habitually saves $X/month will
-   appear to have $X more monthly cushion than their habitual spending pattern suggests. This is by
-   design: savings is treated as discretionary, not a fixed obligation.
-
-5. **One-time inflows can inflate individual months.** Tax refunds, bonuses, and large one-time
+4. **One-time inflows can inflate individual months.** Tax refunds, bonuses, and large one-time
    transfers will make that month appear healthier than typical. The month-detail view allows users
    to identify these.
 
-6. **Six months may not represent the future.** Seasonal patterns, income changes, and life events
+5. **Six months may not represent the future.** Seasonal patterns, income changes, and life events
    after the analysis window are not captured.
 
-7. **Spending behavior is modeled as fixed.** The analysis does not account for how a user's
+6. **Spending behavior is modeled as fixed.** The analysis does not account for how a user's
    spending would adapt if the payment were added.
 
-8. **This is a consumer exploration tool.** It is not a lending decision, financial advice, or
+7. **This is a consumer exploration tool.** It is not a lending decision, financial advice, or
    guarantee of any outcome.
