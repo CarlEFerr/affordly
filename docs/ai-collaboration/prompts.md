@@ -2316,3 +2316,1657 @@ Do not begin the next phase.
 Stop after the Phase 3 closure report.
 
 *End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T15:43:22Z
+
+Begin **Phase 4: Technical and UX Design** for the approved Affordly Requirements-First feature spec.
+
+The requirements phase is complete and approved.
+
+Create and work on `design.md` only.
+
+Do not create `tasks.md`.
+
+Do not implement application code.
+
+Do not install packages.
+
+Do not commit or push.
+
+The purpose of this phase is to turn the approved product requirements into a deliberately reviewed technical and UX architecture before implementation begins.
+
+## Authoritative project sources
+
+Before designing, read:
+
+- the approved `requirements.md`
+- `docs/product/product-direction.md`
+- the existing repository structure
+- the existing project configuration
+
+Treat the approved requirements as authoritative for behavior.
+
+Do not silently change product requirements in the technical design.
+
+If the design reveals that a requirement is infeasible or internally problematic, identify it explicitly rather than quietly changing its meaning.
+
+---
+
+# Assessment priorities
+
+This take-home evaluates:
+
+- product thinking,
+- spec quality,
+- technical fluency,
+- effective AI collaboration,
+- ambiguity navigation,
+- code quality,
+- UX/design quality,
+- scope discipline.
+
+The technical design should therefore make intentional decisions and document their reasoning rather than simply listing technologies.
+
+The implementation remains intentionally small, approximately three hours of focused build effort.
+
+Prefer the simplest architecture that fully satisfies the approved requirements.
+
+Avoid production-scale infrastructure that the MVP does not need.
+
+---
+
+# Nymbus Joy Design System — inspect before UI design
+
+The HR instructions specifically require the exercise to reference:
+
+`https://nymbus-joy.nymbus.com/design-system`
+
+Before finalizing any UX/UI portion of the design, inspect the actual Nymbus Joy Design System documentation.
+
+Use the real documentation as the source of truth where accessible.
+
+Identify relevant guidance for Affordly, including where available:
+
+- typography,
+- color usage,
+- spacing,
+- form controls,
+- buttons,
+- cards/surfaces,
+- status/feedback patterns,
+- loading states,
+- alerts/informational messaging,
+- responsive patterns,
+- accessibility,
+- navigation or mode-selection patterns.
+
+Do not invent Joy tokens, component names, colors, spacing values, or standards that are not actually documented.
+
+If any part of the Joy documentation cannot be accessed from this environment:
+
+1. state exactly what could not be verified,
+2. do not fabricate substitutes and attribute them to Joy,
+3. use broadly sound accessible design principles only where Joy is silent,
+4. clearly distinguish those general design decisions from Joy-derived guidance.
+
+The visual design must use Joy as its primary reference where applicable, but the application does not need to reproduce an entire component library.
+
+Include a concise **Nymbus Joy Alignment** section in `design.md` explaining which documented patterns will guide the Affordly experience.
+
+---
+
+# Intended technical stack
+
+The intended MVP stack is:
+
+### Application
+
+- Next.js
+- TypeScript
+- App Router
+- React
+- Tailwind CSS
+
+### Financial integration
+
+- Plaid Node SDK
+- `react-plaid-link`
+- Plaid Sandbox only
+
+### Visualization
+
+- Recharts, only if a chart materially improves the approved experience
+
+Do not introduce charts simply because Recharts was previously considered.
+
+The approved requirements primarily describe month-level cards and summaries. If the experience does not need a chart, explicitly say so and omit Recharts from the implementation design.
+
+### Testing
+
+- Vitest
+- React Testing Library
+
+### Quality
+
+- TypeScript strict mode
+- ESLint
+
+### Deployment
+
+- Vercel
+
+### Source control
+
+- GitHub
+
+Challenge any of these choices if there is a concrete reason they make the approved MVP materially worse.
+
+Do not replace technologies merely because alternatives exist.
+
+---
+
+# Architecture principles
+
+Design Affordly so that the financial-analysis logic is independent from:
+
+- React components,
+- Next.js route handlers,
+- Plaid-specific response objects.
+
+The core analysis should conceptually look like:
+
+`normalized financial history → monthly aggregation → hypothetical payment simulation → month classification → summary`
+
+Demo Mode and Plaid Sandbox Mode must converge on the same normalized internal model before analysis.
+
+The financial engine must not need to know which data source produced the history.
+
+Document clear component/module boundaries.
+
+A likely conceptual separation is:
+
+- data-source adapters,
+- normalized financial types,
+- financial-analysis engine,
+- UI state/orchestration,
+- presentation components.
+
+Do not blindly use these names or structure if a simpler design is better.
+
+---
+
+# Mobile-driven UX
+
+Affordly is primarily a **mobile-driven financial decision experience**.
+
+The design should begin with the phone-sized experience and then adapt upward.
+
+The full workflow must work from approximately 375px upward.
+
+The experience should feel intentionally designed for a phone, not like a desktop dashboard squeezed into a narrow viewport.
+
+At mobile widths, prioritize:
+
+- the core question,
+- proposed monthly payment,
+- monthly cushion,
+- summary result,
+- historical month results,
+- month-detail inspection,
+- data-mode controls,
+- retrospective disclosure.
+
+Avoid dense financial-dashboard layouts.
+
+Touch targets, content hierarchy, readable monetary values, expandable content, and scrolling behavior should be considered deliberately.
+
+## Desktop/web
+
+Desktop remains a fully supported and polished experience.
+
+All functionality available on mobile must remain available on desktop.
+
+The desktop layout may make better use of horizontal space, but it must remain the same product rather than introducing a separate desktop workflow.
+
+Document the responsive strategy without prematurely specifying arbitrary breakpoint values unless technically necessary.
+
+Do not introduce:
+- React Native,
+- native iOS,
+- native Android,
+- App Store,
+- Google Play,
+- Capacitor,
+- PWA requirements.
+
+Those are future possibilities, not MVP requirements.
+
+---
+
+# Core UX flow
+
+Design the approved core journey.
+
+A first-time reviewer should be able to understand the product very quickly.
+
+The default Demo Mode should expose the product value without requiring bank connection.
+
+The flow should make clear:
+
+1. What Affordly helps the user examine.
+2. Which financial history is currently being used.
+3. Proposed monthly payment.
+4. User-selected monthly cushion.
+5. Retrospective result summary.
+6. Individual historical months.
+7. Details explaining unusual months.
+8. Optional Plaid Sandbox path.
+
+Avoid unnecessary onboarding steps.
+
+Do not require the user to connect Plaid before understanding the product.
+
+---
+
+# Demo Mode
+
+Design Demo Mode as a first-class data source.
+
+Specify:
+
+- where deterministic sample data lives,
+- how it enters the normalized data model,
+- how the default proposed payment and cushion values are represented,
+- how the authored data guarantees meaningful examples of all required states.
+
+Do not scatter sample financial data throughout UI components.
+
+Keep the demo dataset isolated and maintainable.
+
+---
+
+# Plaid Sandbox architecture
+
+Design the minimum clean Plaid Sandbox integration needed for the approved requirements.
+
+The design must explain the full data flow, including:
+
+1. Client requests a Plaid Link token.
+2. Server creates the Link token using server-side Sandbox credentials.
+3. Plaid Link runs in the browser.
+4. Successful Link returns a temporary public token.
+5. Public token is sent to the server.
+6. Server exchanges it for an access token.
+7. Server retrieves the necessary Sandbox account and transaction data.
+8. Eligible checking accounts are identified.
+9. If one eligible checking account exists, it is selected automatically.
+10. If multiple exist, the user selects one.
+11. Posted transactions for the selected checking account are normalized.
+12. Complete calendar months are determined.
+13. The normalized history enters the same analysis engine used by Demo Mode.
+
+Remember:
+
+Plaid Sandbox financial data is test data delivered through the real Plaid API integration.
+
+Do not describe it as the user's real bank history.
+
+## Token/data handling
+
+The approved MVP intentionally has:
+
+- no application authentication,
+- no database,
+- no persistent financial-data storage,
+- no continuous synchronization,
+- no webhooks.
+
+Design the Plaid flow accordingly.
+
+Explain how access tokens and retrieved financial data are kept ephemeral for the current analysis session.
+
+Do not design persistence infrastructure that the product does not require.
+
+Never expose Plaid secret credentials client-side.
+
+---
+
+# Plaid transaction strategy
+
+The design must specify how posted transactions are distinguished from pending transactions.
+
+Only posted transactions enter the backtest.
+
+Explain the normalization needed from Plaid transaction semantics into a small internal transaction representation.
+
+Do not make the analysis engine depend on Plaid field names.
+
+The primary-checking-account model intentionally counts all posted cash movement through that checking account.
+
+Do not add transfer-matching logic.
+
+Do not aggregate credit-card transaction histories.
+
+---
+
+# Financial domain model
+
+Define the minimum internal TypeScript interfaces/types needed to implement the requirements.
+
+Keep them small.
+
+At minimum, reason about representations for concepts such as:
+
+- normalized transaction,
+- checking account option,
+- financial-history source,
+- historical month,
+- monthly cash-flow result,
+- simulated month result,
+- month status,
+- analysis result.
+
+Names may differ if better alternatives emerge.
+
+Document enough shape information to make implementation unambiguous without turning `design.md` into generated code.
+
+---
+
+# Financial-analysis algorithm
+
+Document the calculation pipeline clearly.
+
+It should cover:
+
+### Complete-month selection
+
+- exclude current partial month,
+- use six most recent complete months when available,
+- permit 3–5 complete months in Plaid Mode,
+- reject fewer than three.
+
+### Monthly aggregation
+
+For each month:
+
+`monthly cash flow = cash in - cash out`
+
+based on posted checking-account transactions.
+
+### Simulation
+
+`simulated monthly cash flow = monthly cash flow - proposed monthly payment`
+
+### Status
+
+- `< 0` → Negative
+- `>= 0` and `< cushion` → Below Cushion
+- `>= cushion` → Above Cushion
+
+Document boundary behavior explicitly.
+
+Do not add forecasting, DTI, scoring, recommendations, or daily-balance analysis.
+
+---
+
+# UI component design
+
+Describe the major UI responsibilities without over-componentizing.
+
+Consider the roles needed for:
+
+- top-level Affordly experience,
+- data-mode choice/indicator,
+- payment and cushion controls,
+- result summary,
+- historical month list/cards,
+- expandable month detail,
+- Plaid account selection when necessary,
+- loading/error/insufficient-history states,
+- retrospective disclosure.
+
+Keep the component architecture appropriate for a small application.
+
+Avoid creating a component for every line of markup.
+
+---
+
+# State design
+
+Explain the minimum client state required for:
+
+- current data source,
+- financial history,
+- proposed payment,
+- cushion,
+- selected/expanded month,
+- Plaid connection state,
+- checking-account selection,
+- loading/error states.
+
+Prefer built-in React/Next.js capabilities unless a state-management library is genuinely necessary.
+
+Do not introduce Redux, Zustand, or similar libraries merely for architecture sophistication.
+
+---
+
+# API/server design
+
+Document the minimum server-side boundary required to protect Plaid credentials and perform Plaid operations.
+
+Specify responsibilities and contracts conceptually.
+
+Do not over-design a REST API.
+
+Avoid unnecessary layers.
+
+Explain how errors are converted from technical Plaid/server failures into user-facing states without exposing sensitive details.
+
+---
+
+# Error handling
+
+The design must map important failures to the approved requirement behavior, including:
+
+- user cancels Plaid Link,
+- Link/token creation fails,
+- token exchange fails,
+- transaction retrieval fails,
+- no checking account is available,
+- multiple checking accounts require selection,
+- insufficient complete-month history,
+- invalid payment,
+- invalid cushion,
+- unexpected server failure.
+
+Demo Mode should remain usable regardless of Plaid failure.
+
+Document which errors belong in UI state versus server logging.
+
+---
+
+# Security and privacy
+
+This is a financial-data prototype.
+
+Document appropriate MVP safeguards without pretending it is production-ready.
+
+At minimum address:
+
+- Plaid secret remains server-side,
+- `.env.local` is not committed,
+- no bank credentials are handled directly by Affordly,
+- no application database persists financial data,
+- no access token is intentionally persisted beyond what the current prototype requires,
+- technical Plaid errors are not exposed directly to users.
+
+Also document what would require additional work before production use, without implementing those systems now.
+
+---
+
+# Testing strategy
+
+Design a focused test strategy that demonstrates technical fluency without overwhelming the three-hour MVP.
+
+Prioritize unit testing of pure financial logic.
+
+Identify the highest-value tests for:
+
+- monthly aggregation,
+- proposed-payment simulation,
+- exact status boundaries,
+- zero cushion,
+- incomplete/current-month exclusion,
+- 3–5 versus fewer-than-3 month histories,
+- posted versus pending transactions,
+- large inflow/outflow ordering in month detail.
+
+Use React Testing Library for a small number of high-value interaction tests, such as:
+
+- changing payment updates results,
+- changing cushion changes classification,
+- month detail expands,
+- Plaid failure exposes Demo Mode,
+- mobile workflow does not omit functionality.
+
+Do not design an excessive end-to-end test suite unless there is a compelling reason.
+
+---
+
+# Requirements traceability
+
+`design.md` should make it possible to understand how the architecture satisfies the approved requirement areas.
+
+Do not duplicate all 96 requirements verbatim.
+
+Instead, map major design decisions back to the relevant requirement sections where useful.
+
+---
+
+# Scope protection
+
+Do not design:
+
+- authentication,
+- databases,
+- persistent user profiles,
+- production Plaid,
+- webhooks,
+- background synchronization,
+- future forecasting,
+- credit scoring,
+- DTI,
+- budgeting,
+- AI financial explanations,
+- recommendations,
+- transaction editing,
+- daily balance reconstruction,
+- native mobile applications.
+
+If a design decision increases scope significantly, challenge it.
+
+---
+
+# Design artifact expectations
+
+Create `design.md` as the design artifact associated with the existing Requirements-First spec.
+
+It should include, where useful:
+
+- design goals and constraints,
+- Nymbus Joy alignment,
+- system architecture,
+- architecture/data-flow diagram,
+- module responsibilities,
+- Plaid sequence/data flow,
+- internal data model,
+- financial-analysis pipeline,
+- UI/UX architecture,
+- mobile/desktop responsive strategy,
+- server/API boundaries,
+- error handling,
+- security/privacy considerations,
+- testing strategy,
+- requirement traceability,
+- explicit design tradeoffs and rejected alternatives.
+
+Use diagrams where they materially improve understanding.
+
+Do not add diagrams merely for decoration.
+
+---
+
+# Human review requirement
+
+The generated design is not automatically approved.
+
+If you encounter a meaningful architectural choice with competing options, state:
+
+- the alternatives,
+- the tradeoff,
+- your recommended choice.
+
+Do not silently make substantial scope or architecture changes.
+
+---
+
+# Stop condition
+
+After creating the initial `design.md`:
+
+1. Stop before tasks.
+2. Do not create `tasks.md`.
+3. Do not modify application code.
+4. Do not install dependencies.
+5. Do not commit or push.
+6. Report:
+   - design path,
+   - architecture chosen,
+   - Joy documentation successfully inspected or any access limitation,
+   - major technical decisions,
+   - dependencies proposed,
+   - major tradeoffs,
+   - assumptions made,
+   - any requirement that became questionable during design,
+   - items that deserve explicit human review.
+
+Wait for review before progressing.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T16:24:20Z
+
+I reviewed the initial `design.md`.
+
+Do not create `tasks.md`.
+
+Do not implement application code.
+
+Do not install dependencies.
+
+Do not commit or push.
+
+This is still Phase 4: Technical and UX Design.
+
+Revise the design based on the decisions below.
+
+## 1. Use `/transactions/sync`, not `/transactions/get`
+
+Replace the proposed `/transactions/get` integration with `/transactions/sync`.
+
+Plaid currently recommends `/transactions/sync` for new Transactions integrations.
+
+This application does not need ongoing synchronization or stored cursors because the MVP performs a one-session analysis.
+
+Design the initial Sandbox retrieval as:
+
+1. Exchange the public token for the server-side access token.
+2. Retrieve account metadata.
+3. Call `/transactions/sync` without a cursor for the initial history.
+4. Follow `next_cursor` while `has_more` is true.
+5. Collect the transaction updates required for the current session.
+6. Use only posted/finalized transactions for Affordly's analysis.
+7. Normalize the resulting transaction set before returning it to the client.
+8. Do not persist the cursor or access token after the request completes.
+
+Account for Plaid's transaction-update readiness state.
+
+Use `transactions_update_status` to distinguish whether:
+- transaction data is not ready,
+- only the initial update is complete,
+- historical update is complete.
+
+Because webhooks are explicitly outside the MVP, use a small bounded retry/polling strategy inside the connection operation if historical data is still being prepared.
+
+Do not wait indefinitely.
+
+If sufficient historical data is still unavailable after the bounded attempt, return a specific non-technical state indicating that Sandbox history is still being prepared and allow the user to retry the Plaid connection or continue using Demo Mode.
+
+Do not add webhook infrastructure.
+
+Document this as an intentional Sandbox-MVP tradeoff.
+
+---
+
+## 2. Explicitly request enough Plaid transaction history
+
+The current design omitted an important Plaid configuration detail.
+
+Affordly needs approximately six complete calendar months.
+
+Plaid's default initial Transactions history is shorter than this.
+
+Configure Transactions initialization so the Sandbox Item requests enough history for the Affordly analysis.
+
+Use approximately:
+
+`days_requested: 210`
+
+This provides enough room to cover six complete calendar months plus the current partial month.
+
+Document where this is configured in the Link-token creation request.
+
+Do not request the full 730-day maximum because Affordly does not need it.
+
+---
+
+## 3. Do not use a static Plaid `client_user_id`
+
+The design currently proposes:
+
+`client_user_id: "affordly-session"`
+
+Replace this.
+
+Plaid requires `client_user_id` to uniquely represent the end user and not contain PII.
+
+Because this prototype deliberately has no authentication or persisted users, generate an ephemeral non-PII identifier for each new Link session, for example with a server-side UUID.
+
+Document that this is an MVP Sandbox identity strategy.
+
+Do not introduce user accounts or persistence just to create this identifier.
+
+---
+
+## 4. Correct the public-token / access-token language
+
+Fix any statement implying that the Plaid `public_token` never reaches the client.
+
+The browser receives the temporary public token from Plaid Link and sends it to the server.
+
+The security boundary is:
+
+> The Plaid **access token** must never be returned to or stored by client-side application code.
+
+Ensure the architecture diagram, sequence diagram, prose, and security section all describe this accurately.
+
+---
+
+## 5. Fix complete-month availability semantics
+
+The current design considers a month available only if that month contains at least one transaction.
+
+That is too simplistic.
+
+It could:
+- drop a legitimate zero-transaction month,
+- create a non-contiguous month sequence,
+- misrepresent the analysis period.
+
+Affordly's historical window should remain a sequence of complete calendar months.
+
+For Plaid data, use the earliest available posted transaction as the conservative evidence boundary for available history.
+
+Conceptually:
+
+1. Determine M−1 through M−6.
+2. Determine how far back the retrieved posted transaction history extends.
+3. Treat complete calendar months within that continuous supported history window as analyzable even when an individual month contains zero transactions.
+4. A zero-transaction month therefore aggregates to:
+   - cash in = $0
+   - cash out = $0
+   - monthly cash flow = $0
+5. Do not produce a sparse sequence such as M−1, M−3, M−5 while omitting intervening months.
+
+If there is insufficient evidence that three complete consecutive months of history are available, return the existing insufficient-history state.
+
+Clearly document this approximation and its limitation.
+
+---
+
+## 6. Keep account selection inline
+
+When more than one eligible checking account is returned, use an **inline account-selection step within the main Affordly flow**.
+
+Do not use a modal or bottom sheet for the MVP.
+
+The selector should:
+- be mobile-friendly,
+- use large touch targets,
+- show account name plus masked account identifier,
+- make it clear that one checking account will be analyzed,
+- allow the user to return to Demo Mode.
+
+The exact Joy component pattern may be chosen after the Joy system is inspected.
+
+This keeps account selection accessible and avoids additional overlay/dialog complexity.
+
+---
+
+## 7. Use responsive input updates, not blur-only updates
+
+Change the input interaction strategy.
+
+The Affordly experience should feel responsive when a user experiments with payment values.
+
+Use:
+- raw string input state while typing,
+- validation of complete valid currency input,
+- a small debounce of approximately 200–300ms before committing a valid numeric value to the analysis,
+- currency formatting on blur.
+
+This prevents excessive visual flicker while preserving the product's core interactive quality.
+
+Invalid or incomplete inputs must not produce partially calculated results.
+
+Do not introduce a third-party debounce dependency.
+
+---
+
+## 8. Keep the desktop month experience sequential
+
+Retain the single-column month narrative for the MVP at desktop widths.
+
+Do not switch the six months into a dashboard-style grid.
+
+The historical sequence is part of the product story.
+
+Desktop may:
+- use a wider centered content container,
+- place the two primary inputs side-by-side where appropriate,
+- use more generous spacing,
+- improve readability through layout enhancement.
+
+But the historical months should remain easy to read chronologically.
+
+---
+
+## 9. Remove judgmental status semantics
+
+The current design describes:
+
+- Negative as destructive/error red with ✕
+- Below Cushion as warning amber
+- Above Cushion as success green with ✓
+
+That framing is too close to pass/fail judgment.
+
+Affordly deliberately does not tell the user whether the proposed commitment is good, bad, safe, unsafe, affordable, or unaffordable.
+
+Revise the status visual strategy so that:
+
+- status labels remain explicit:
+  - Negative
+  - Below Cushion
+  - Above Cushion
+- labels and neutral descriptive icons provide the primary distinction,
+- icons must not imply pass/fail,
+- do not describe Above Cushion as “success,”
+- do not describe Negative as “failure” or “destructive,”
+- final colors should be selected using the actual Nymbus Joy system once inspected.
+
+Until Joy is inspected, do not assign specific Tailwind red/amber/green values as approved design decisions.
+
+Color may support the distinction later, but it must not communicate a recommendation or verdict.
+
+---
+
+## 10. Remove inferred transaction explanations
+
+Remove example copy such as:
+
+> “This may be a yearly expense.”
+
+Affordly does not know that from the approved data model.
+
+Month detail should present factual information:
+
+- transaction description,
+- amount,
+- cash-in/out totals,
+- original monthly cash flow,
+- simulated monthly cash flow.
+
+The user can interpret why that historical month was unusual.
+
+Do not add anomaly detection, inferred explanations, or AI-generated commentary.
+
+---
+
+## 11. Reconcile the API error contract
+
+The current design contains two competing response patterns:
+
+- `{ error: string }`
+- `{ error: string, code: PlaidErrorCode }`
+
+Use one coherent contract.
+
+A small application-owned error code is useful for mapping server failures into user-facing states.
+
+The server may therefore return something conceptually like:
+
+```ts
+{
+  error: string;
+  code:
+    | 'no_checking_account'
+    | 'history_preparing'
+    | 'connection_failed'
+    | 'unexpected';
+}
+```
+
+These are **Affordly error classifications**, not raw Plaid error codes.
+
+Raw Plaid error details must remain server-side.
+
+Keep the public contract small.
+
+Note that insufficient history after successful data retrieval can be handled by the normalized analysis/eligibility logic rather than necessarily being an API error.
+
+---
+
+## 12. Ensure Plaid pagination is complete
+
+Do not knowingly truncate the transaction dataset.
+
+When `/transactions/sync` indicates additional pages via `has_more`, follow the cursor until all available updates for the initial session have been retrieved.
+
+Use the largest sensible page size supported by Plaid where appropriate.
+
+Do not document silent truncation as an accepted MVP limitation if it is straightforward to avoid.
+
+---
+
+## 13. Keep Joy decisions explicitly unresolved until inspected
+
+The Nymbus Joy documentation was not successfully accessible during the initial design pass.
+
+Do not invent Joy-specific values.
+
+Preserve a clear distinction between:
+
+- approved structural UX decisions,
+- provisional principle-based styling,
+- actual Joy-derived decisions.
+
+Before Phase 4 can be finally approved, the real Nymbus Joy documentation still needs to be inspected manually.
+
+Mark the following as pending Joy validation:
+
+- typography,
+- color/status treatment,
+- spacing rhythm,
+- input styling,
+- button patterns,
+- card/surface treatment,
+- informational disclosure styling,
+- loading/error patterns,
+- account-selection control pattern.
+
+Do not mark those choices final yet.
+
+---
+
+## 14. Update testing strategy
+
+Update tests to match the revised architecture.
+
+Include high-value tests for:
+
+- contiguous complete-month construction when an interior month has zero transactions,
+- `/transactions/sync` normalization,
+- pending transaction exclusion,
+- Plaid sign conversion,
+- cursor pagination aggregation,
+- transaction-history-not-ready handling where practical,
+- debounced valid payment update,
+- invalid inputs not updating results.
+
+Do not expand into a large integration/e2e suite.
+
+---
+
+## Completion report
+
+After revising `design.md`, report:
+
+1. Design sections changed
+2. Final Plaid endpoint strategy
+3. Transaction readiness strategy
+4. Requested history length
+5. Final Link-session identity strategy
+6. Final account-selection UX decision
+7. Final input-update behavior
+8. Final month-layout direction
+9. Status-semantics correction
+10. Any remaining technical ambiguity
+11. Exact Joy items still requiring manual inspection
+12. Confirmation that:
+   - `tasks.md` does not exist,
+   - application code was not modified,
+   - dependencies were not installed,
+   - nothing was committed or pushed.
+
+Stop after the revision report.
+
+ 
+
+I now have partial official Nymbus Design System documentation: the installation guide.
+
+Use this information to refine `design.md`.
+
+Do not install the Nymbus packages yet because the private Nexus permissions are still pending.
+
+Do not create `tasks.md`.
+
+Do not implement application code.
+
+Do not commit or push.
+
+## Confirmed Nymbus Design System integration model
+
+The official installation documentation confirms that the Nymbus design system is distributed as the **FIAT** design system.
+
+The future integration uses:
+
+- `@nymbus/fiat` — component library
+- `@nymbus/fiat-tokens` — token package
+- `ClientThemeProvider` from `@nymbus/fiat`
+- global token stylesheet:
+  `@import "@nymbus/fiat-tokens/tokens.css";`
+- Tailwind scanning the FIAT distribution:
+  `./node_modules/@nymbus/fiat/dist/**/*.js`
+- direct component imports such as:
+  `Button`, `Badge`, `Dialog`
+
+The documented prerequisites are:
+
+- Node.js >= 22
+- pnpm >= 11
+- React >= 19
+- Tailwind CSS >= 4
+
+The private package registry requires Nymbus VPN/Nexus permissions that are still pending.
+
+Therefore, do not attempt package installation yet.
+
+---
+
+## Package-manager decision
+
+Revise the technical design to use **pnpm** as the project package manager instead of npm.
+
+This aligns the project with the documented FIAT installation workflow before feature dependencies are installed.
+
+The implementation/task phase should migrate the existing project cleanly to pnpm before adding Plaid, testing, or FIAT dependencies.
+
+Do not maintain multiple lockfiles.
+
+The repository should ultimately use one package manager and one lockfile.
+
+---
+
+## Design-system replacement strategy
+
+Until FIAT package access is available, build the application so the presentation layer can be replaced by the actual Nymbus components and tokens with minimal impact.
+
+The financial analysis engine, source adapters, application state, and domain model must remain completely independent of the design system.
+
+Avoid scattering product styling across business components.
+
+Use a small local presentation layer for reusable primitives such as:
+
+- application button
+- currency input
+- status badge
+- informational disclosure/banner
+- surface/card container
+- loading treatment
+- account-selection control
+
+These are implementation-level conceptual boundaries, not an instruction to recreate the full FIAT component library.
+
+The goal is:
+
+`Affordly feature components`
+→ `small presentation abstraction`
+→ `temporary accessible implementation now`
+→ `actual @nymbus/fiat components when available`
+
+Do not build a competing design system.
+
+---
+
+## Token strategy
+
+Do not hard-code provisional visual values throughout React components.
+
+Use semantic styling boundaries so eventual FIAT token adoption is centralized.
+
+For example, provisional concepts may represent:
+
+- page background
+- surface background
+- primary text
+- secondary text
+- border
+- focus state
+- informational state
+- the three descriptive Affordly statuses
+
+These temporary values must be clearly treated as provisional and replaceable.
+
+Once package access is available, the design expects:
+
+`@nymbus/fiat-tokens/tokens.css`
+
+to become the source of design-system tokens.
+
+Do not invent or claim Nymbus token names beyond what has been verified in the official documentation.
+
+---
+
+## Theme-provider readiness
+
+Plan the application root so it can later be wrapped with:
+
+`ClientThemeProvider`
+
+from `@nymbus/fiat`
+
+without requiring changes to financial or application logic.
+
+The provider belongs at the application presentation/root boundary.
+
+Do not add it yet while the package is unavailable.
+
+---
+
+## Component migration readiness
+
+Where the official installation documentation confirms FIAT components such as:
+
+- `Button`
+- `Badge`
+- `Dialog`
+
+design local Affordly UI boundaries so those components can replace provisional implementations later.
+
+Do not assume other FIAT components exist until their documentation is available.
+
+Do not fabricate FIAT APIs.
+
+---
+
+## Current visual implementation policy
+
+While FIAT access is unavailable:
+
+1. Prioritize mobile-first hierarchy and usability.
+2. Use semantic HTML and strong accessibility.
+3. Keep visual styling intentionally clean and restrained.
+4. Avoid elaborate custom visual design that would later fight the Nymbus system.
+5. Avoid locking the product to arbitrary Tailwind colors or detailed component aesthetics.
+6. Focus polish on:
+   - spacing,
+   - hierarchy,
+   - interaction,
+   - responsive behavior,
+   - content clarity,
+   - states and feedback.
+
+The provisional UI should look professional, but it should remain easy to restyle with FIAT.
+
+---
+
+## Update the Nymbus Joy/FIAT section
+
+Revise the current Nymbus section of `design.md`.
+
+It should now distinguish three categories:
+
+### Confirmed from official documentation
+
+Include only verified information such as:
+- package names,
+- provider,
+- token stylesheet,
+- Tailwind integration mechanism,
+- prerequisites,
+- private registry requirement,
+- verified component examples.
+
+### Pending access
+
+Still awaiting documentation for:
+- full typography system,
+- spacing rules,
+- detailed color semantics,
+- complete component catalog,
+- form patterns,
+- card patterns,
+- alert/status patterns,
+- mobile/responsive guidance,
+- other interaction standards.
+
+### Interim Affordly strategy
+
+Explain how the application will remain design-system-ready while these details are unavailable.
+
+---
+
+## Do not block implementation on IT access
+
+The application should be implementable and testable while package permissions are pending.
+
+Lack of FIAT access must not prevent implementation of:
+
+- financial logic,
+- Demo Mode,
+- Plaid Sandbox integration,
+- responsive structure,
+- interaction behavior,
+- accessibility,
+- tests.
+
+Once access is granted, FIAT integration should be a contained presentation-layer enhancement rather than a structural rewrite.
+
+Update the Phase 4 design accordingly and include these changes in the design revision report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T16:35:30Z
+
+Perform one final technical review pass on `design.md`.
+
+Do not create `tasks.md`.
+
+Do not implement application code.
+
+Do not install dependencies.
+
+Do not commit or push.
+
+This is still Phase 4.
+
+Apply only the corrections below.
+
+## 1. Reconcile all `/transactions/sync` update types
+
+The current design accumulates only `added[]` transactions.
+
+Revise the sync design so the server reconstructs the current transaction snapshot by processing all three Plaid update collections:
+
+- `added`
+- `modified`
+- `removed`
+
+Use a transaction map keyed by `transaction_id`.
+
+Conceptually:
+
+1. Begin with an empty transaction map.
+2. For every paginated sync response:
+   - `added` → insert/update transaction by ID
+   - `modified` → replace/update transaction by ID
+   - `removed` → delete transaction by ID
+3. Continue until `has_more === false`.
+4. Only after reconciliation:
+   - keep posted transactions,
+   - normalize sign convention,
+   - group/filter by checking account,
+   - return the resulting current snapshot.
+
+Do not simply concatenate `added[]`.
+
+This is particularly important because Plaid can represent transaction changes and pending→posted transitions through added/modified/removed update events.
+
+Update:
+- Plaid sync algorithm
+- Plaid adapter responsibilities
+- types if necessary
+- testing strategy
+
+Add focused tests proving:
+- modified transaction replaces its prior representation,
+- removed transaction disappears,
+- pending→posted update does not result in duplicate cash movement.
+
+Do not introduce persistent cursor storage.
+
+---
+
+## 2. Make complete-month history detection more conservative
+
+The current design treats the month containing the earliest retrieved posted transaction as fully supported.
+
+That is not necessarily safe.
+
+Example:
+
+- earliest transaction returned: May 15
+- we cannot conclude that May 1–14 had zero activity.
+
+Revise the availability rule.
+
+For Plaid history:
+
+1. Determine the earliest retrieved posted transaction.
+2. Treat the calendar month containing that transaction as the **history boundary month**, not automatically as a complete supported month.
+3. The earliest month that can safely count as a complete historical month is the month **after** that boundary month.
+4. From there, construct a contiguous sequence through M−1.
+5. Include zero-transaction months inside that supported sequence.
+6. Cap the analysis at the six most recent complete supported months.
+7. Require at least three supported complete months.
+
+Example:
+
+- Today: October
+- earliest retrieved transaction: March 18
+- March is boundary/partial
+- supported complete months begin in April
+- April through September = six complete months
+
+This conservative behavior is one reason the Link configuration requests approximately 210 days rather than exactly six months.
+
+If the earliest transaction is older than M−6, the normal six-month analysis remains unaffected.
+
+Document that this approach may conservatively exclude a month that actually had full coverage, but avoids falsely claiming partial data represents a complete month.
+
+Update the related unit tests accordingly.
+
+---
+
+## 3. Use a session-stable non-PII `client_user_id`
+
+Do not generate a brand-new `client_user_id` independently on every `/link/token/create` request.
+
+Plaid defines `client_user_id` as the identifier representing the end user.
+
+Because Affordly intentionally has no authentication or persistent user accounts, use a lightweight session-scoped identity for the prototype.
+
+Design the flow as:
+
+1. The browser creates a UUID for the current Affordly session if one does not already exist.
+2. Store it in browser `sessionStorage`.
+3. Reuse that same UUID for subsequent Plaid Link attempts during the browser session.
+4. Send that UUID to `/api/plaid/link-token`.
+5. The server passes it as `user.client_user_id`.
+6. It contains no PII.
+7. It is not persisted beyond the browser session.
+
+Do not introduce:
+- authentication,
+- a database,
+- persistent profiles.
+
+Validate the received identifier server-side as a bounded string/UUID before passing it to Plaid.
+
+Document that this is an MVP Sandbox identity strategy; a production system would use its authenticated internal user identifier.
+
+---
+
+## 4. Correct the pnpm migration sequence
+
+The current migration sequence says to delete `package-lock.json` before using `pnpm import`.
+
+Correct it.
+
+If using lockfile import, the sequence should conceptually be:
+
+1. Ensure the required pnpm version is installed.
+2. Keep the existing `package-lock.json` temporarily.
+3. Run `pnpm import` so pnpm can derive `pnpm-lock.yaml` from the existing npm lockfile.
+4. Run `pnpm install` and verify the project.
+5. Remove `package-lock.json`.
+6. Ensure only `pnpm-lock.yaml` remains.
+7. Add an appropriate `packageManager` declaration in `package.json` if useful for reproducibility.
+8. Run existing build/lint/type checks.
+
+Do not maintain both lockfiles after migration.
+
+If the currently installed pnpm version provides a simpler officially supported migration path, implementation may use that instead, but the final repository must have one package manager and one lockfile.
+
+---
+
+## 5. Keep the Sandbox readiness strategy provisional
+
+Keep the current bounded retry concept, but do not treat:
+
+`3 attempts × 1.5 seconds`
+
+as a product requirement or fixed architectural invariant.
+
+Document it as an initial implementation constant that should be validated against actual Plaid Sandbox behavior.
+
+The user-facing behavior is what matters:
+
+- bounded wait,
+- never wait indefinitely,
+- if history is still preparing, explain that clearly,
+- preserve Demo Mode,
+- allow retry.
+
+The exact retry count/delay may be adjusted during implementation without requiring a design change.
+
+---
+
+## 6. Preserve all already-approved design decisions
+
+Do not reopen:
+
+- `/transactions/sync` choice,
+- `days_requested: 210`,
+- client-side financial analysis,
+- inline account selection,
+- 200ms-class debounced inputs,
+- single-column sequential month layout,
+- non-judgmental status semantics,
+- mobile-primary responsive UX,
+- Demo Mode as first-class experience,
+- FIAT-ready presentation abstraction,
+- no authentication/database/webhooks,
+- Recharts exclusion.
+
+FIAT visual details remain pending access.
+
+---
+
+## Completion report
+
+After revising `design.md`, report:
+
+1. How `/transactions/sync` reconciliation now handles added/modified/removed.
+2. Final complete-month history-boundary rule.
+3. Final `client_user_id` session strategy.
+4. Corrected pnpm migration sequence.
+5. Whether the retry constants remain provisional.
+6. Any blocking technical ambiguity remaining.
+7. Confirmation that:
+   - `tasks.md` does not exist,
+   - application code was not modified,
+   - dependencies were not installed,
+   - nothing was committed or pushed.
+
+Stop after the report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T16:42:05Z
+
+The Phase 4 technical and UX design has been reviewed and approved.
+
+Do not begin task generation yet.
+
+Do not implement application code.
+
+Do not install dependencies.
+
+## Final design verification
+
+Before committing:
+
+1. Re-read the complete `design.md`.
+2. Confirm its status no longer says:
+
+`Draft — Awaiting Review`
+
+3. Update the status to:
+
+`Approved — Phase 4`
+
+4. Confirm the design remains consistent with the approved `requirements.md` and `docs/product/product-direction.md`.
+
+5. Confirm the approved architecture includes:
+
+- Next.js App Router
+- TypeScript strict mode
+- Tailwind CSS v4
+- pnpm as the project package manager
+- Plaid Node SDK
+- `react-plaid-link`
+- Plaid Sandbox only
+- `/transactions/sync`
+- `days_requested: 210`
+- full sync reconciliation for `added`, `modified`, and `removed`
+- cursor pagination until `has_more === false`
+- posted transactions only
+- session-scoped non-PII `client_user_id`
+- no persistent Plaid access-token storage
+- no authentication or database
+- client-side pure financial analysis
+- common normalized data model for Demo and Plaid
+- mobile-primary responsive UX
+- complete desktop/web experience
+- inline checking-account selection
+- debounced payment/cushion interaction
+- sequential month-card layout
+- non-judgmental status semantics
+- Demo Mode as a first-class experience
+- Recharts intentionally excluded
+- FIAT-ready presentation abstraction
+
+6. Confirm the complete-month history rule is:
+
+- the month containing the earliest retrieved posted transaction is treated as a boundary/possibly partial month,
+- that boundary month is not counted as a supported complete month,
+- supported complete history begins with the following calendar month,
+- supported months form a contiguous sequence through M−1,
+- zero-transaction months inside the supported window remain valid months,
+- analysis uses at most the six most recent supported complete months,
+- fewer than three supported complete months is ineligible.
+
+7. Confirm the `/transactions/sync` design reconciles:
+- `added`
+- `modified`
+- `removed`
+
+before normalization and analysis.
+
+8. Confirm the session-scoped Plaid identity strategy uses a non-PII UUID reused for the browser session and does not introduce authentication or persistence.
+
+9. Confirm the pnpm migration sequence retains `package-lock.json` until after `pnpm import`.
+
+---
+
+## Nymbus FIAT status
+
+FIAT access is still pending due to internal registry permissions.
+
+This does **not** block approval of the technical design.
+
+Confirm `design.md` clearly distinguishes:
+
+### Confirmed from official installation documentation
+- `@nymbus/fiat`
+- `@nymbus/fiat-tokens`
+- `ClientThemeProvider`
+- global token stylesheet integration
+- Tailwind integration
+- documented prerequisites
+- private Nexus registry
+- confirmed component examples
+
+### Pending direct FIAT access
+- typography
+- colors
+- spacing
+- form patterns
+- buttons
+- cards/surfaces
+- badge semantics
+- informational messaging
+- loading patterns
+- account-selection pattern
+- responsive/mobile-specific guidance
+
+### Interim strategy
+- accessible semantic local UI primitives
+- centralized provisional semantic tokens
+- no fabricated FIAT APIs or token names
+- presentation layer designed for later FIAT replacement
+- financial/domain logic independent from visual implementation
+
+Do not mark unverified FIAT visual details as approved Nymbus design decisions.
+
+---
+
+## Remaining implementation validations
+
+Document these as implementation-time validations, not blocking design questions:
+
+1. Validate the provisional Plaid Sandbox retry timing against actual Sandbox behavior.
+2. Confirm the exact pending/posting fields exposed by the installed Plaid Node SDK types.
+
+These do not require reopening Phase 4 unless implementation reveals a material architectural contradiction.
+
+---
+
+## Collaboration history
+
+Verify `docs/ai-collaboration/prompts.md` contains the full Phase 4 collaboration history, including:
+
+- initial technical-design prompt,
+- first human design review,
+- FIAT integration-readiness addendum,
+- second technical review,
+- final technical correction pass,
+- approval/closure prompt.
+
+Do not rewrite or retrospectively summarize the raw prompts.
+
+---
+
+## Git safety
+
+Run final checks before committing.
+
+Verify the staged changes contain only intended Phase 4 documentation and collaboration-history changes.
+
+Confirm no:
+
+- `.env.local`
+- Plaid credentials
+- Nexus credentials
+- private registry tokens
+- build artifacts
+- dependency changes
+- application-code changes
+- unrelated files
+
+are included.
+
+---
+
+## Commit
+
+Stage the approved Phase 4 design artifact and accumulated collaboration history.
+
+Include any documentation files that were intentionally updated as part of the approved Phase 4 design.
+
+Create the commit:
+
+`docs: approve Affordly technical design`
+
+Push it to:
+
+`main`
+
+on the configured Affordly GitHub remote.
+
+Do not create `tasks.md`.
+
+Do not install dependencies.
+
+Do not begin implementation.
+
+---
+
+## Completion report
+
+After the push succeeds, report:
+
+1. Commit hash
+2. Files included
+3. Final design path
+4. Confirmation that design status is `Approved — Phase 4`
+5. Confirmation that Phase 4 collaboration prompts were committed
+6. Confirmation that FIAT access remains pending but non-blocking
+7. Remote and branch pushed
+8. Final `git status`
+9. Confirmation that:
+   - `tasks.md` does not exist,
+   - no application code changed,
+   - no dependencies were installed.
+
+Stop after the Phase 4 closure report.
+
+*End of entry*
