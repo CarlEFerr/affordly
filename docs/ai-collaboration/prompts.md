@@ -3970,3 +3970,1091 @@ After the push succeeds, report:
 Stop after the Phase 4 closure report.
 
 *End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T16:46:07Z
+
+Begin **Phase 5: Implementation Task Breakdown** for the approved Affordly Requirements-First feature spec.
+
+The following artifacts are approved and authoritative:
+
+- `requirements.md` — `Approved — Phase 3`
+- `design.md` — `Approved — Phase 4`
+- `docs/product/product-direction.md`
+
+Create `tasks.md` only.
+
+Do not execute any task.
+
+Do not modify application code.
+
+Do not install dependencies.
+
+Do not migrate package managers yet.
+
+Do not commit or push.
+
+The purpose of this phase is to turn the approved requirements and design into a small, ordered, executable implementation plan that can be reviewed before coding begins.
+
+---
+
+# Assessment context
+
+This project is a take-home assessment expected to demonstrate approximately three hours of focused product-building work.
+
+The evaluator cares about:
+
+- product thinking,
+- quality of the spec,
+- technical fluency,
+- effective AI collaboration,
+- ambiguity navigation,
+- code quality,
+- design quality,
+- scope discipline.
+
+The task list should therefore represent the **smallest coherent implementation plan that produces the approved product**.
+
+Do not manufacture excessive task granularity merely because the requirements specification is detailed.
+
+A reviewer should be able to understand the build strategy from `tasks.md` at a glance.
+
+---
+
+# Task-generation principles
+
+Generate discrete, trackable implementation tasks with:
+
+- a clear outcome,
+- relevant requirement references where useful,
+- explicit dependencies when sequencing matters,
+- verification/acceptance checks,
+- required versus optional status where relevant.
+
+Tasks should be sized so that each one produces a meaningful increment.
+
+Avoid both extremes:
+
+- one giant task such as "build Affordly",
+- dozens of tiny mechanical tasks such as "create file X", "create file Y", "add class Z".
+
+Prefer cohesive vertical or architectural increments.
+
+---
+
+# Do not begin implementation
+
+This phase produces the plan only.
+
+Do not:
+
+- run task 1,
+- create application files,
+- change `package.json`,
+- run pnpm migration,
+- install Plaid,
+- install testing dependencies,
+- modify CSS,
+- create tests,
+- connect Plaid,
+- deploy,
+- commit or push.
+
+Stop after `tasks.md` and the task-review report.
+
+---
+
+# Required sequencing
+
+The implementation plan should broadly respect this dependency order.
+
+You may refine the grouping, but do not violate the underlying dependencies.
+
+## 1. Development foundation and package-manager migration
+
+The first implementation increment should prepare the existing repository without building product functionality.
+
+Include:
+
+- migrate cleanly from npm to pnpm,
+- retain `package-lock.json` long enough for `pnpm import`,
+- produce one final `pnpm-lock.yaml`,
+- remove the npm lockfile afterward,
+- add the package-manager declaration where appropriate,
+- install only the dependencies approved by `design.md`,
+- establish Vitest / React Testing Library configuration,
+- verify:
+  - install,
+  - lint,
+  - type checking,
+  - build,
+  - test command.
+
+FIAT packages must **not** be installed while Nexus/VPN permissions remain unavailable.
+
+Do not add Recharts.
+
+This foundation task should be independently verifiable before feature implementation proceeds.
+
+---
+
+## 2. Pure financial domain and analysis engine
+
+Implement the source-independent financial core before UI or Plaid logic.
+
+Cover:
+
+- normalized domain types,
+- complete-month selection,
+- conservative supported-history boundary,
+- contiguous month construction,
+- zero-transaction month handling,
+- monthly cash-in/cash-out aggregation,
+- hypothetical payment simulation,
+- status classification,
+- summary counts,
+- top-three cash movements,
+- date/currency utilities required by the engine.
+
+This code must remain independent from:
+
+- React,
+- Next.js,
+- Plaid API types,
+- FIAT.
+
+Pair this increment with the highest-value unit tests from the approved design.
+
+The financial correctness of the application is more important than visual implementation order.
+
+---
+
+## 3. Deterministic Demo Mode vertical slice
+
+Create the deterministic authored Demo dataset and adapter.
+
+Then connect it to the analysis engine so the application has a complete usable product experience **before Plaid is added**.
+
+The Demo vertical slice should prove:
+
+- exactly six historical complete months,
+- default proposed payment,
+- default monthly cushion,
+- all three statuses represented,
+- meaningful large inflow/outflow examples,
+- current-month-relative dates,
+- same normalized model that Plaid will later use.
+
+This increment should give us a working Affordly backtest using sample data.
+
+---
+
+## 4. Mobile-primary application shell and provisional UI layer
+
+Implement the small presentation abstraction described in the approved design.
+
+Use accessible semantic implementations while FIAT access is unavailable.
+
+Include only the primitives actually required by the product.
+
+Keep provisional visual tokens centralized so they can later be replaced by FIAT.
+
+Establish:
+
+- theme-provider boundary/pass-through,
+- application page structure,
+- mobile-primary hierarchy,
+- complete desktop responsiveness,
+- accessible interaction foundations.
+
+Do not create a competing design system.
+
+Do not fabricate FIAT component APIs or token names.
+
+---
+
+## 5. Core Affordly interaction experience
+
+Build the full Demo Mode UX.
+
+Cover the approved flow:
+
+- product framing,
+- data-mode indicator,
+- proposed monthly payment input,
+- monthly cushion input,
+- validation,
+- debounced valid updates,
+- retrospective summary,
+- analyzed date range,
+- sequential month cards,
+- descriptive month statuses,
+- expandable factual month detail,
+- retrospective product disclosure.
+
+Prioritize approximately 375px mobile behavior first while ensuring the same functionality works cleanly on desktop.
+
+The product should feel complete in Demo Mode at the end of this increment.
+
+Include focused React Testing Library coverage for the highest-value interactions rather than attempting exhaustive component tests.
+
+---
+
+## 6. Plaid Sandbox server integration
+
+Add the minimum server-side Plaid integration specified by the approved design.
+
+Include:
+
+- server-side Plaid client configuration,
+- `/api/plaid/link-token`,
+- session-scoped non-PII `client_user_id` contract,
+- `days_requested: 210`,
+- `/api/plaid/connect`,
+- public-token exchange,
+- account retrieval,
+- eligible checking-account filtering,
+- `/transactions/sync`,
+- full cursor pagination,
+- reconciliation of:
+  - `added`,
+  - `modified`,
+  - `removed`,
+- pending/posting behavior based on the installed SDK,
+- normalized data response,
+- access-token lifetime limited to the server request,
+- application-owned error classifications,
+- bounded transaction-readiness handling.
+
+The implementation must verify actual Plaid Node SDK types instead of relying blindly on pseudocode from `design.md`.
+
+If the installed SDK differs materially from the design, stop and report the discrepancy rather than silently changing architecture.
+
+---
+
+## 7. Plaid Sandbox client flow
+
+Connect the server integration to the existing Affordly experience.
+
+Include:
+
+- `react-plaid-link`,
+- session UUID handling,
+- Link-token retrieval,
+- Plaid Link lifecycle,
+- user cancellation behavior,
+- connection/loading/error states,
+- automatic use of one eligible checking account,
+- inline selection when multiple checking accounts exist,
+- no-checking-account state,
+- history-preparing state,
+- insufficient-history handling,
+- retry path,
+- return to Demo Mode.
+
+Plaid Sandbox data must feed the exact same normalized financial model and analysis engine as Demo Mode.
+
+Do not create a second Plaid-specific analysis path.
+
+---
+
+## 8. Cross-mode validation and product-boundary review
+
+Once Demo and Plaid paths both work, perform a focused integration review against the approved requirements.
+
+Verify:
+
+- same calculation behavior for Demo and Plaid,
+- posted transaction handling,
+- sign normalization,
+- account selection,
+- complete-month history rules,
+- 3–5 month partial analysis,
+- fewer-than-3 month rejection,
+- payment/cushion boundary cases,
+- retrospective language,
+- no affordability recommendation language,
+- no prediction language,
+- Demo fallback from all Plaid errors,
+- no exposed Plaid access token or secret,
+- mobile and desktop parity.
+
+Fix defects discovered in this verification as part of the task rather than opening new product scope.
+
+---
+
+## 9. UX polish and accessibility pass
+
+After functionality is complete, perform one contained polish pass.
+
+Focus on:
+
+- mobile layout,
+- desktop adaptation,
+- touch targets,
+- keyboard interaction,
+- labels,
+- focus states,
+- loading feedback,
+- error feedback,
+- status distinction without pass/fail framing,
+- monetary readability,
+- spacing and hierarchy,
+- no critical horizontal scrolling,
+- consistent provisional visual tokens.
+
+Do not spend time creating elaborate custom aesthetics that will later conflict with FIAT.
+
+FIAT visual integration remains deferred until access is available.
+
+If access becomes available during implementation, treat FIAT adoption as a separate reviewed enhancement rather than silently expanding an unrelated task.
+
+---
+
+## 10. Documentation, deployment, and assessment readiness
+
+The final required implementation increment should prepare the repository for submission.
+
+Include the assessment-required README content:
+
+- what Affordly is,
+- why the problem matters,
+- who the product is for,
+- how the historical backtest works,
+- Demo Mode,
+- Plaid Sandbox API integration,
+- important limitations,
+- local setup,
+- environment variables,
+- how to run tests,
+- how to run the app,
+- live demo URL if deployed,
+- key product/technical decisions,
+- Nymbus FIAT status and current access limitation,
+- what would be done with more time.
+
+Also include:
+
+- verify `.env.example`,
+- verify no secrets in git,
+- production build,
+- lint,
+- type checking,
+- test suite,
+- Vercel deployment,
+- quick mobile and desktop smoke test of the deployed app.
+
+Do not add production Plaid functionality.
+
+---
+
+# FIAT access
+
+Nymbus FIAT permissions remain pending.
+
+The task plan must not block product implementation on FIAT access.
+
+Do not create a required implementation task that cannot proceed until Nexus access is granted.
+
+Instead, include a clearly marked **optional / conditional task**:
+
+> Apply Nymbus FIAT components and tokens if access becomes available before submission.
+
+That conditional task should:
+
+- install the verified FIAT packages through the documented private registry,
+- integrate `ClientThemeProvider`,
+- import FIAT token CSS,
+- update Tailwind scanning as required,
+- replace appropriate local UI primitives with verified FIAT components,
+- visually re-check mobile and desktop behavior,
+- run the full validation suite afterward.
+
+It must not be required for the rest of the task graph to progress.
+
+Do not guess at unverified FIAT APIs.
+
+---
+
+# Implementation checkpoints
+
+Design the task breakdown so implementation can be reviewed at meaningful checkpoints.
+
+At minimum, make it easy to recognize these milestones:
+
+### Checkpoint A — Foundation
+Repository migrated and quality tooling ready.
+
+### Checkpoint B — Financial engine
+Pure analysis logic works and is tested.
+
+### Checkpoint C — Demo product
+Affordly is a complete usable Demo Mode application.
+
+### Checkpoint D — Plaid Sandbox
+External API path works through the same engine.
+
+### Checkpoint E — Submission ready
+Polish, documentation, tests, and deployment complete.
+
+These checkpoints do not need to be separate tasks if the generated structure expresses them clearly.
+
+---
+
+# Task dependencies
+
+Explicitly model meaningful dependencies.
+
+For example:
+
+- UI Demo integration depends on the financial engine and dataset.
+- Plaid normalization depends on normalized domain types.
+- Plaid client integration depends on server routes.
+- final cross-mode validation depends on both data modes existing.
+- documentation/deployment depends on the implementation being stable.
+
+Do not invent dependencies between unrelated work.
+
+Kiro may identify tasks that can safely run independently, but this is a small take-home project: optimize for clarity and controlled implementation rather than maximum parallelism.
+
+---
+
+# Required vs optional work
+
+Clearly distinguish:
+
+### Required for submission
+Everything necessary for:
+- working Demo Mode,
+- Plaid Sandbox path,
+- approved financial behavior,
+- mobile/desktop experience,
+- accessibility fundamentals,
+- tests,
+- README,
+- deployment.
+
+### Conditional
+- final FIAT component/token integration if permissions become available in time.
+
+### Out of scope
+Do not generate tasks for:
+- authentication,
+- database,
+- persistent Plaid tokens,
+- production Plaid,
+- webhooks,
+- forecasts,
+- budgets,
+- DTI,
+- credit scores,
+- AI financial explanations,
+- transaction editing,
+- native mobile apps,
+- App Store / Google Play,
+- Recharts.
+
+---
+
+# Traceability
+
+Reference requirement/design sections where doing so improves confidence.
+
+Do not attach every individual task to dozens of requirement numbers.
+
+Use traceability at the meaningful feature-area level.
+
+`tasks.md` should remain readable as an implementation plan, not become another copy of `requirements.md`.
+
+---
+
+# Task review report
+
+After generating `tasks.md`, do not execute it.
+
+Report:
+
+1. `tasks.md` path.
+2. Number of top-level tasks.
+3. Number of subtasks, if applicable.
+4. Required tasks versus conditional/optional tasks.
+5. Implementation order.
+6. Major dependencies.
+7. Checkpoints represented.
+8. Estimated scope risks or tasks that appear too large.
+9. Any task that seems unnecessary for the assessment.
+10. Any requirement or design choice that became difficult to translate into a task.
+11. Confirmation that:
+    - no task was executed,
+    - no application code changed,
+    - no dependency was installed,
+    - package-manager migration did not occur,
+    - nothing was committed or pushed.
+
+Stop after the task-review report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T16:57:29Z
+
+Revise the current `tasks.md` based on the human review below.
+
+This is still Phase 5: Implementation Task Breakdown.
+
+Do not execute any task.
+
+Do not modify application code.
+
+Do not install dependencies.
+
+Do not migrate package managers.
+
+Do not commit or push.
+
+## 1. Mark the task artifact as awaiting approval
+
+The current `tasks.md` status says:
+
+`Ready for Execution`
+
+That is premature because the task breakdown has not yet received human approval.
+
+Change it to an appropriate review state such as:
+
+`Draft — Awaiting Review`
+
+Do not mark it ready for execution until the Phase 5 closure/approval step.
+
+---
+
+## 2. Correct Task 6 dependencies
+
+Task 6 currently says it depends only on Task 1.
+
+That is incorrect.
+
+The Plaid server and adapter implementation depend on the normalized domain contracts and financial-history types established in Task 2.
+
+Change Task 6 dependencies to:
+
+`Tasks 1 and 2`
+
+Task 6 remains independent of the Demo/UI work in Tasks 3–5 and may be implemented after Task 2 while the Demo experience is being built.
+
+Update:
+- Task 6 dependency declaration,
+- implementation-order summary,
+- major-dependency explanation.
+
+The clean dependency structure should be approximately:
+
+`1 → 2`
+
+Then after Task 2:
+
+- Tasks 3/4 path toward Demo Mode
+- Task 6 Plaid server path
+
+may proceed independently.
+
+Task 7 still requires both the completed Demo/client experience and Plaid server integration.
+
+---
+
+## 3. Fix the Task 2 conservative-history acceptance example
+
+The current Task 2 acceptance criterion says:
+
+> when the earliest transaction is in M−3, M−3 is excluded and M−2/M−1 are returned.
+
+That conflicts with the same task's rule that fewer than three supported complete months returns an ineligible result.
+
+Correct the example.
+
+For example:
+
+### Eligible boundary example
+
+If the earliest posted transaction is in M−4:
+
+- M−4 is the boundary month and is excluded.
+- Supported complete months are M−3, M−2, M−1.
+- Exactly three supported months exist.
+- Analysis is eligible.
+
+### Ineligible boundary example
+
+If the earliest posted transaction is in M−3:
+
+- M−3 is excluded.
+- Only M−2 and M−1 remain.
+- Fewer than three supported complete months exist.
+- Return `ineligible`.
+
+Update the unit-test bullets and acceptance criteria so they agree.
+
+---
+
+## 4. Fix the Vitest zero-test foundation check
+
+Task 1 currently expects the normal:
+
+`pnpm test`
+
+command to succeed when zero test files exist.
+
+Do not weaken the normal project test command globally just to accommodate the foundation stage.
+
+Keep the ordinary `test` script strict.
+
+For Task 1 only, either:
+
+- run the foundation verification using Vitest's `--passWithNoTests` option,
+
+or
+
+- omit the normal test-suite execution until Task 2 introduces the first real tests.
+
+Preferred approach:
+
+Use a one-time foundation command such as:
+
+`pnpm test -- --passWithNoTests`
+
+if compatible with the chosen script configuration.
+
+After Task 2 exists, the ordinary:
+
+`pnpm test`
+
+must pass actual tests normally.
+
+Do not permanently configure `passWithNoTests: true`, because later an accidentally missing test suite should not silently pass.
+
+Update Task 1 acceptance criteria accordingly.
+
+---
+
+## 5. Add Plaid sync pagination-mutation handling
+
+The Plaid `/transactions/sync` task already handles cursor pagination, but it is missing a documented failure mode.
+
+Plaid can return:
+
+`TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION`
+
+when transaction data changes during a paginated sync.
+
+Add to Task 6.3:
+
+- preserve the cursor used to begin the current pagination sequence,
+- if this specific mutation-during-pagination error occurs, discard the partial page accumulation for that sequence,
+- restart the complete pagination loop from the original cursor,
+- rebuild reconciliation state from that restarted sequence,
+- do not merely retry the failed page.
+
+For Affordly's initial no-cursor snapshot, the original cursor is the empty/undefined initial cursor.
+
+Keep this handling bounded against pathological repeated failure; an unexpected repeated failure should surface through the existing safe `connection_failed` path.
+
+Add one focused mocked/server-level test if practical, or at minimum a pure reconciliation/pagination-helper test proving restart behavior.
+
+Do not expose the raw Plaid error code to the user.
+
+---
+
+## 6. Clarify readiness vs insufficient-history behavior
+
+Make Task 6 and Task 7 explicit about this distinction.
+
+After the bounded readiness attempts:
+
+### If historical update is not complete, but the currently retrieved data already supports at least 3 conservative complete months
+
+Affordly may proceed with the available 3–5 month historical analysis and show the actual analyzed range.
+
+### If historical update is not complete and fewer than 3 supported complete months are currently available
+
+Return/use the `history_preparing` state because more requested history may still arrive.
+
+### If Plaid indicates historical update is complete and fewer than 3 supported complete months exist
+
+This is no longer a “history preparing” condition.
+
+The normalized history should reach the client and the analysis engine should classify it as:
+
+`insufficient history`
+
+according to the approved product requirements.
+
+Keep these states distinct.
+
+---
+
+## 7. Correct the product-language verification task
+
+Task 8 currently proposes searching for forbidden words including:
+
+`predict`
+
+and then verifying those words do not exist.
+
+That would incorrectly reject the required disclosure:
+
+> This analysis is based on historical data. It does not predict future performance.
+
+Likewise, a raw substring search for `afford` would match the product name `Affordly`.
+
+Rewrite Task 8.7 as a semantic/product-boundary review rather than a naive forbidden-string test.
+
+Verify there are no statements that:
+
+- claim the user can or cannot afford the payment,
+- call the payment safe or unsafe,
+- call a result good or bad,
+- recommend accepting or rejecting financing,
+- claim or imply that historical results predict future outcomes,
+- use future-certain language such as “will” when describing the simulated financial result.
+
+Allowed boundary/disclaimer language includes statements such as:
+
+- “does not predict future performance”
+- “historical analysis”
+- the product name “Affordly”
+
+The acceptance criterion should say:
+
+> No affordability verdict, recommendation, or predictive claim appears in rendered product copy.
+
+Do not say the word `predict` itself is forbidden.
+
+---
+
+## 8. Remove unnecessary inactive Demo controls
+
+Review Task 5.3.
+
+Do not require a visible but inactive “Use Demo Data” control while the application is already in Demo Mode.
+
+The action should appear only when it provides a meaningful recovery/switching action, such as:
+
+- Plaid Mode,
+- Plaid error,
+- account-selection state.
+
+Keep the Demo Mode indicator visible, but avoid UI controls that do nothing.
+
+---
+
+## 9. Fix Task 10 repository/deployment sequencing
+
+Task 10 currently asks for:
+
+`git status — working tree clean`
+
+before the README/deployment work has necessarily been committed.
+
+Make the submission sequence internally achievable.
+
+A sensible sequence is:
+
+1. Complete README except for final live URL if it is not known yet.
+2. Run full quality/security checks.
+3. Review the complete implementation diff.
+4. Commit and push the stable application to `main`.
+5. Allow Vercel to deploy that commit.
+6. Smoke-test the deployed application.
+7. Add/update the live URL in README if necessary.
+8. Make the final documentation/submission commit and push.
+9. Confirm the final working tree is clean and `main` is synchronized with `origin/main`.
+
+Do not require a clean working tree while intended uncommitted implementation changes still exist.
+
+Preserve the human review/approval gate before commits and pushes during implementation.
+
+---
+
+## 10. Keep checkpoint implementation human-gated
+
+Make the execution guidance explicit.
+
+When implementation begins, do not execute all 10 required tasks in one uninterrupted batch.
+
+Use the approved checkpoints:
+
+- A — Foundation
+- B — Financial engine
+- C — Demo product
+- D — Plaid Sandbox
+- E — Submission ready
+
+At each checkpoint:
+
+1. Complete the checkpoint work.
+2. Run its acceptance checks.
+3. Report results and any deviations from the approved design.
+4. Stop for human review before committing/pushing and before beginning the next checkpoint.
+
+A material SDK/design discrepancy must also trigger a stop-and-report rather than silent architectural change.
+
+This preserves the human-in-the-loop workflow demonstrated throughout the assessment.
+
+---
+
+## Scope remains unchanged
+
+Do not add new product functionality.
+
+Do not add:
+
+- authentication
+- database persistence
+- production Plaid
+- webhooks
+- Recharts
+- forecasting
+- budgeting
+- recommendations
+- native mobile applications
+
+FIAT remains conditional on permissions.
+
+---
+
+## Completion report
+
+After revising `tasks.md`, report:
+
+1. Final top-level task count.
+2. Final subtask count.
+3. Corrected Task 6 dependencies.
+4. Corrected conservative-boundary examples.
+5. Final Vitest foundation strategy.
+6. Plaid pagination-mutation handling added.
+7. Final distinction between `history_preparing` and `insufficient history`.
+8. Corrected product-language review strategy.
+9. Corrected deployment/commit sequencing.
+10. Checkpoint human-gate behavior.
+11. Any blocking task ambiguity remaining.
+12. Confirmation that:
+   - no task was executed,
+   - no application code changed,
+   - no dependencies were installed,
+   - package-manager migration did not occur,
+   - nothing was committed or pushed.
+
+Stop after the revised task report.
+
+*End of entry*
+
+---
+
+## Auto-captured Prompt
+
+**Timestamp:** 2026-09-26T17:04:56Z
+
+The Phase 5 implementation task breakdown has been reviewed and approved.
+
+Do not execute any implementation task yet.
+
+Do not modify application code.
+
+Do not install dependencies.
+
+Do not migrate package managers yet.
+
+## Final task verification
+
+Before committing:
+
+1. Re-read the complete `tasks.md`.
+2. Confirm its current review status is updated from:
+
+`Draft — Awaiting Review`
+
+to:
+
+`Approved — Phase 5`
+
+3. Confirm the task plan contains:
+
+- 10 required implementation tasks,
+- 1 conditional FIAT task,
+- approximately 68 subtasks,
+- five implementation checkpoints:
+  - A — Foundation
+  - B — Financial engine
+  - C — Demo product
+  - D — Plaid Sandbox
+  - E — Submission ready.
+
+4. Confirm the implementation dependency structure is correct:
+
+- Task 1 → foundation
+- Task 2 depends on Task 1
+- Tasks 3 and 4 depend on Task 2
+- Task 5 depends on Tasks 3 and 4
+- Task 6 depends on Tasks 1 and 2
+- Task 7 depends on Tasks 5 and 6
+- Tasks 8 and 9 depend on the completed product/Plaid path as documented
+- Task 10 depends on Tasks 8 and 9
+- Task 11 remains conditional on FIAT access and does not block Tasks 1–10.
+
+5. Confirm the corrected conservative history examples remain present:
+
+- earliest transaction in M−4 → boundary month excluded → M−3 through M−1 = 3 supported months → eligible
+- earliest transaction in M−3 → boundary month excluded → only M−2 through M−1 = 2 supported months → ineligible.
+
+6. Confirm Task 1 uses `--passWithNoTests` only for the one-time foundation verification and does not permanently weaken the test configuration.
+
+7. Confirm Task 6 includes:
+
+- `/transactions/sync`
+- full pagination
+- `added` / `modified` / `removed` reconciliation
+- restart on `TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION`
+- bounded restart/retry behavior
+- posted-only transaction normalization
+- safe server-side access-token handling
+- distinction between `history_preparing` and true insufficient history.
+
+8. Confirm the product-language review is semantic rather than based on naive forbidden-word matching.
+
+9. Confirm Task 10 uses the correct human-review → commit → push → deploy → smoke-test → final README/update sequence.
+
+10. Confirm FIAT remains conditional and does not block submission.
+
+---
+
+## Human-gated execution
+
+Confirm `tasks.md` clearly states that implementation must stop at each checkpoint for human review.
+
+The execution pattern is:
+
+### Checkpoint A — Foundation
+Complete Task 1.
+
+Then:
+- run acceptance checks,
+- report results,
+- report deviations,
+- stop for human review.
+
+Do not automatically continue to Checkpoint B.
+
+### Checkpoint B — Financial engine
+Complete Task 2 only after approval.
+
+Then:
+- run tests and quality checks,
+- report results,
+- stop for review.
+
+### Checkpoint C — Demo product
+Complete Tasks 3–5 only after approval.
+
+Then:
+- demonstrate the working Demo Mode,
+- run checks,
+- report results,
+- stop for review.
+
+### Checkpoint D — Plaid Sandbox
+Complete Tasks 6–8 only after approval.
+
+Then:
+- verify Plaid Sandbox integration,
+- report actual SDK behavior and any design deviations,
+- stop for review.
+
+### Checkpoint E — Submission ready
+Complete Tasks 9–10 only after approval.
+
+Then:
+- run final quality checks,
+- review deployment and README,
+- stop for final submission review.
+
+Any material mismatch between actual SDK/library behavior and the approved design must trigger a stop-and-report rather than a silent architectural change.
+
+---
+
+## Collaboration history
+
+Verify `docs/ai-collaboration/prompts.md` contains the complete Phase 5 collaboration history, including:
+
+- initial task-generation prompt,
+- human task-review corrections,
+- approval/closure prompt.
+
+Do not rewrite or summarize the raw prompt history.
+
+---
+
+## Git safety
+
+Before committing:
+
+- inspect `git status`,
+- inspect the diff,
+- ensure no implementation work accidentally occurred,
+- ensure no package-manager migration occurred,
+- ensure no dependency files were modified,
+- ensure no secrets or `.env.local` changes are included.
+
+Expected Phase 5 changes should be limited to:
+
+- `tasks.md`
+- collaboration-history documentation
+- any intentional spec metadata/status updates.
+
+---
+
+## Commit
+
+Stage the approved Phase 5 task artifact and collaboration history.
+
+Create the commit:
+
+`docs: approve Affordly implementation plan`
+
+Push to:
+
+`main`
+
+on the configured Affordly GitHub remote.
+
+Do not execute Task 1 after the push.
+
+---
+
+## Completion report
+
+After the push succeeds, report:
+
+1. Commit hash
+2. Files included
+3. Final `tasks.md` path
+4. Confirmation that status is `Approved — Phase 5`
+5. Final task/subtask counts
+6. Confirmation that checkpoint human gates are present
+7. Confirmation that Phase 5 collaboration prompts were committed
+8. Remote and branch pushed
+9. Final `git status`
+10. Confirmation that:
+   - no implementation task was executed,
+   - no application code changed,
+   - no dependencies were installed,
+   - pnpm migration did not occur.
+
+Stop after the Phase 5 closure report.
+
+*End of entry*
