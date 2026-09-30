@@ -40,4 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-vendor/
+# Nymbus FIAT packages — committed to repo because the Nymbus Nexus registry is
+# not reachable from Vercel (private network / VPN required). These are pinned
+# versions; update by downloading new tarballs when upgrading @nymbus/fiat.
+# vendor/
