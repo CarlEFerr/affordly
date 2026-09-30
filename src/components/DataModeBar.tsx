@@ -33,9 +33,9 @@ export default function DataModeBar({
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex items-center gap-2 min-w-0">
         {mode === 'demo' ? (
-          <Badge variant="info">Demo data</Badge>
+          <Badge type="info">Demo data</Badge>
         ) : (
-          <Badge variant="info">Plaid Sandbox</Badge>
+          <Badge type="info">Plaid Sandbox</Badge>
         )}
         <span className="text-sm text-(--color-text-secondary) truncate">
           {mode === 'plaid'

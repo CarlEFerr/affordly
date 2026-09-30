@@ -1,65 +1,85 @@
 @import "tailwindcss";
 
-/* Exclude documentation and spec directories from Tailwind class scanning.
-   These files contain example class strings in prose that should not generate utilities. */
+/* ── Nymbus FIAT Design System tokens ────────────────────────────────────────
+   tokens.css   — primitive + semantic CSS custom properties (--ui-*, --primary-*, etc.)
+   theme.css    — @theme inline block: registers FIAT semantic tokens as Tailwind
+                  color utilities so FIAT components' class names resolve correctly
+   ──────────────────────────────────────────────────────────────────────────── */
+@import "@nymbus/fiat-tokens/tokens.css";
+@import "@nymbus/fiat-tokens/theme.css";
+
+/* Exclude documentation and spec directories from Tailwind class scanning */
 @source not "../docs/**";
 @source not "../.kiro/**";
 
-/* ─── Provisional semantic tokens ────────────────────────────────────────────
-   All values below are PROVISIONAL placeholders pending Nymbus FIAT access.
-   When @nymbus/fiat-tokens/tokens.css becomes available, replace this @theme
-   block with the official FIAT token import. Do NOT hard-code these color values
-   in component files — always reference these CSS variables.
-   ──────────────────────────────────────────────────────────────────────────── */
+/* Scan FIAT component dist so Tailwind generates CSS for all classes used inside
+   FIAT components (Button, Badge, Spinner, etc.). Without this, PurgeCSS-equivalent
+   trimming would remove classes that only appear in the pre-compiled package. */
+@source "../../node_modules/@nymbus/fiat/dist/**/*.js";
+
+/* ─── Affordly semantic token bridge ─────────────────────────────────────────
+   Maps Affordly's internal --color-* variable names to FIAT's verified semantic
+   tokens. No component class names change — only the values behind them move
+   from provisional hex values to the Nymbus design system.
+
+   Token source: @nymbus/fiat-tokens@1.7.1 dist/tokens.css
+   Every var() reference here is a variable confirmed in the installed package.
+   ────────────────────────────────────────────────────────────────────────────── */
 @theme inline {
-  /* Fonts (from create-next-app Geist setup) */
+  /* Fonts (Next.js Geist setup — unchanged) */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Page & surface — PROVISIONAL */
-  --color-page-bg:         #f8fafc;
-  --color-surface:         #ffffff;
-  --color-surface-subtle:  #f1f5f9;
+  /* Page & surface — FIAT: primary-page-bg=#fff, primary-tile-bg=#fff,
+     secondary-tile-bg=grey-050 (#EBECEC) */
+  --color-page-bg:        var(--primary-page-bg);
+  --color-surface:        var(--primary-tile-bg);
+  --color-surface-subtle: var(--secondary-tile-bg);
 
-  /* Typography — PROVISIONAL */
-  --color-text-primary:    #0f172a;
-  --color-text-secondary:  #475569;
-  --color-text-tertiary:   #94a3b8;
+  /* Typography — FIAT: primary-text=black, secondary-text=grey-500, tertiary-text=grey-400 */
+  --color-text-primary:   var(--primary-text);
+  --color-text-secondary: var(--secondary-text);
+  --color-text-tertiary:  var(--tertiary-text);
 
-  /* Borders & dividers — PROVISIONAL */
-  --color-border:          #e2e8f0;
-  --color-border-focus:    #3b82f6;
+  /* Borders — FIAT: divider-fill=grey-100, visible-focus-border=black */
+  --color-border:         var(--divider-fill);
+  --color-border-focus:   var(--visible-focus-border);
 
-  /* Interactive — PROVISIONAL */
-  --color-focus-ring:      #3b82f6;
-  --color-btn-primary-bg:  #0f172a;
-  --color-btn-primary-text:#ffffff;
+  /* Interactive — FIAT: primary-button-fill=primary-600, primary-button-label=white */
+  --color-focus-ring:          var(--visible-focus-border);
+  --color-btn-primary-bg:      var(--primary-button-fill);
+  --color-btn-primary-text:    var(--primary-button-label);
 
-  /* Informational disclosure — PROVISIONAL (not warning, not error) */
-  --color-info-surface:    #eff6ff;
-  --color-info-text:       #1e40af;
-  --color-info-border:     #bfdbfe;
+  /* Informational disclosure — FIAT: info-status tokens (blue family) */
+  --color-info-surface: var(--info-status-bg);
+  --color-info-text:    var(--info-status-label);
+  --color-info-border:  var(--info-status-border);
 
-  /* ── Status descriptors — PROVISIONAL, awaiting FIAT guidance ─────────────
-     These are DESCRIPTIVE — they communicate a simulation state, not a verdict.
-     Colors support label text as a secondary (non-sole) differentiator.
-     Replace all with verified FIAT semantic tokens when access is granted.
-     ─────────────────────────────────────────────────────────────────────── */
+  /* ── Status descriptors ─────────────────────────────────────────────────────
+     IMPORTANT: These tokens carry Affordly's non-judgmental status semantics,
+     NOT FIAT badge type semantics. We intentionally borrow FIAT's color values
+     while keeping Affordly's descriptive labels (Negative / Below Cushion /
+     Above Cushion). StatusBadge retains its local wrapper for this reason.
+
+     Negative: uses FIAT danger colors (red family) — factual cash-flow sign only
+     Below Cushion: uses FIAT warning colors (amber family) — factual shortfall only
+     Above Cushion: uses FIAT info colors (blue family) — avoids "success = good" implication
+     ────────────────────────────────────────────────────────────────────────── */
 
   /* Negative: simulated cash flow < $0 */
-  --color-status-negative-surface:  #fef2f2;
-  --color-status-negative-text:     #991b1b;
-  --color-status-negative-border:   #fecaca;
+  --color-status-negative-surface: var(--danger-status-bg);
+  --color-status-negative-text:    var(--danger-status-label);
+  --color-status-negative-border:  var(--danger-status-border);
 
-  /* Below Cushion: simulated >= $0 but < user's cushion target */
-  --color-status-below-cushion-surface: #fffbeb;
-  --color-status-below-cushion-text:    #92400e;
-  --color-status-below-cushion-border:  #fde68a;
+  /* Below Cushion: simulated ≥ $0 but < user's cushion target */
+  --color-status-below-cushion-surface: var(--warning-status-bg);
+  --color-status-below-cushion-text:    var(--warning-status-label);
+  --color-status-below-cushion-border:  var(--warning-status-border);
 
-  /* Above Cushion: simulated >= user's cushion target */
-  --color-status-above-cushion-surface: #eff6ff;
-  --color-status-above-cushion-text:    #1e3a8a;
-  --color-status-above-cushion-border:  #bfdbfe;
+  /* Above Cushion: simulated ≥ user's cushion target */
+  --color-status-above-cushion-surface: var(--info-status-bg);
+  --color-status-above-cushion-text:    var(--info-status-label);
+  --color-status-above-cushion-border:  var(--info-status-border);
 }
 
 /* ─── Base styles ─────────────────────────────────────────────────────────── */

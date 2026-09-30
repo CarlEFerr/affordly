@@ -1,2 +1,6 @@
 allowBuilds:
   unrs-resolver: true
+
+overrides:
+  "@nymbus/fiat": "file:./vendor/fiat-1.8.1.tgz"
+  "@nymbus/fiat-tokens": "file:./vendor/fiat-tokens-1.7.1.tgz"

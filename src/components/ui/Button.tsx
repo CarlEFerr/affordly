@@ -1,37 +1,13 @@
 /**
- * Affordly Button primitive — FIAT-ready thin wrapper.
- * Replace with Button from @nymbus/fiat when access is available.
+ * Affordly Button — replaced with verified @nymbus/fiat Button (Task 11.5).
+ *
+ * FIAT Button variants confirmed from @nymbus/fiat@1.8.1 dist/index.d.ts:
+ *   variant: "primary" | "secondary" | "outline" | "ghost" | "text"
+ *   size:    "default" | "sm" | "lg" | "icon" | "icon-sm" | "nav"
+ *   pill, fullWidth, asChild, loading, leftIcon — all available
+ *
+ * Affordly uses variant="primary" and variant="ghost" — both map directly.
+ * No shim needed; this is a direct re-export.
  */
-import type { ButtonHTMLAttributes } from 'react';
-
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'ghost';
-}
-
-export default function Button({
-  variant = 'primary',
-  className = '',
-  children,
-  ...props
-}: ButtonProps) {
-  const base =
-    'inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium ' +
-    'transition-colors focus-visible:outline-none focus-visible:ring-2 ' +
-    'focus-visible:ring-(--color-focus-ring) focus-visible:ring-offset-1 ' +
-    'disabled:pointer-events-none disabled:opacity-50 min-h-[44px]';
-
-  const variants = {
-    primary:
-      'bg-(--color-btn-primary-bg) text-(--color-btn-primary-text) ' +
-      'hover:opacity-90 active:opacity-80',
-    ghost:
-      'bg-transparent text-(--color-text-secondary) underline-offset-4 ' +
-      'hover:text-(--color-text-primary) hover:underline',
-  };
-
-  return (
-    <button className={`${base} ${variants[variant]} ${className}`} {...props}>
-      {children}
-    </button>
-  );
-}
+export { Button as default } from '@nymbus/fiat';
+export type { ButtonProps } from '@nymbus/fiat';

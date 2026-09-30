@@ -13,6 +13,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@nymbus/fiat": "1.8.1",
+    "@nymbus/fiat-tokens": "1.7.1",
     "next": "16.3.6",
     "plaid": "^47.0.0",
     "react": "19.2.8",

@@ -1,25 +1,20 @@
 /**
- * Affordly Card primitive — FIAT-ready surface container.
- * Replace with FIAT surface/card component when available.
+ * Affordly Card — re-exports @nymbus/fiat Card family (Task 11.7).
+ *
+ * FIAT exports: Card, CardHeader, CardTitle, CardDescription,
+ *               CardContent, CardFooter, CardAction.
+ *
+ * Card is not currently used in Affordly's component tree (month cards
+ * and surfaces use Tailwind directly). Re-exported here for future use.
+ * When card-pattern surfaces are introduced, import from this module.
  */
-
-interface CardProps {
-  children: React.ReactNode;
-  className?: string;
-  /** Additional padding override */
-  padding?: 'none' | 'sm' | 'md';
-}
-
-export default function Card({ children, className = '', padding = 'md' }: CardProps) {
-  const paddings = { none: '', sm: 'p-3', md: 'p-4 sm:p-5' };
-  return (
-    <div
-      className={
-        `bg-(--color-surface) rounded-xl border border-(--color-border) ` +
-        `${paddings[padding]} ${className}`
-      }
-    >
-      {children}
-    </div>
-  );
-}
+export {
+  Card as default,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  CardAction,
+} from '@nymbus/fiat';

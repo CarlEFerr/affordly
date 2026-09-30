@@ -201,17 +201,23 @@ Plaid Transactions data is processed asynchronously after the access token is is
 
 ## Nymbus FIAT Status
 
-Affordly was built with the intention of using `@nymbus/fiat` (component library) and `@nymbus/fiat-tokens` (design tokens) from Nymbus's private Nexus registry. The package names are confirmed from official documentation.
+Affordly uses `@nymbus/fiat@1.8.1` and `@nymbus/fiat-tokens@1.7.1` from Nymbus's private Nexus registry, integrated as Task 11 after Checkpoint E deployment.
 
-**Current status:** private registry access was not available during development. All UI primitives (`Button`, `Badge`, `StatusBadge`, `CurrencyInput`, `Card`, `Spinner`) are local provisional implementations. All CSS values are declared in a `@theme` block in `globals.css` marked `PROVISIONAL — replace with @nymbus/fiat-tokens values`. No FIAT token names were fabricated or guessed.
+**Integration summary:**
+- `ClientThemeProvider` from `@nymbus/fiat` wraps the application root via `ThemeProviderWrapper`
+- `@nymbus/fiat-tokens/tokens.css` + `theme.css` provide the complete Nymbus token set
+- `Button`, `Badge`, `Spinner`, `Card` are now FIAT components
+- `globals.css` contains a bridge `@theme` block that maps Affordly's internal `--color-*` variable names to verified FIAT semantic tokens — all component class names are unchanged, only the values behind them now come from the design system
+- `StatusBadge` retains a local wrapper: FIAT `Badge` type values (`"success"`, `"danger"`) would imply a pass/fail affordability verdict, violating Req 5.2. The wrapper uses FIAT color tokens through the bridge without carrying their semantic labels
+- `CurrencyInput` retains its current implementation: FIAT's `Field`/`InputGroup` pattern could replace the presentational shell in a future dedicated pass without changing the validation logic
 
-When registry access becomes available, the migration path is documented as Task 11 in `.kiro/specs/affordly-financial-backtest/tasks.md`.
+**Installation note:** pnpm 12's HTTP client (undici) has a TLS compatibility issue with the Nymbus development CA certificate. Packages are installed via local tarballs in `vendor/` with `pnpm-workspace.yaml` overrides. To set up locally, download the tarballs from Nexus after connecting to the Nymbus VPN and place them in `vendor/` before running `pnpm install`.
 
 ---
 
 ## What Would Be Done With More Time
 
-- **FIAT integration (Task 11).** Once Nexus registry access is available, replace the provisional `@theme` token block with `@import "@nymbus/fiat-tokens/tokens.css"`, replace `ThemeProviderWrapper` with `ClientThemeProvider`, and replace local UI primitives with verified FIAT components. No component API assumptions have been made, so this replacement is contained.
+- **CurrencyInput FIAT shell.** The `CurrencyInput` component retains its custom implementation. FIAT's `Field`, `FieldLabel`, `FieldDescription`, `FieldError`, and `InputGroup` components could replace the presentational shell while keeping the validation/debounce logic unchanged.
 
 - **Production Plaid environment.** The current integration targets Plaid Sandbox only. Moving to production requires a separate Plaid `PLAID_SECRET` for the production environment, updated environment variables in the deployment platform, and removal of Sandbox-specific test users from documentation.
 
